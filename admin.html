@@ -9,24 +9,18 @@
         :root { --bg: #050505; --panel: #111; --red: #ef4444; --red-glow: rgba(239, 68, 68, 0.3); }
         body { margin: 0; background: var(--bg); color: #fff; font-family: monospace; display: flex; justify-content: center; padding: 20px; }
         .hidden { display: none !important; }
-        
         .auth-box { border: 1px solid var(--red); padding: 40px; text-align: center; margin-top: 100px; background: rgba(255,0,0,0.05); }
         input.sys-in { width: 100%; padding: 12px; background: #000; border: 1px solid var(--red); color: white; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
         button.sys-btn { width: 100%; padding: 12px; background: var(--red); color: black; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button.sys-btn:hover { box-shadow: 0 0 15px var(--red-glow); background: #fca5a5; }
-
         #dashboard { width: 100%; max-width: 1000px; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
         .panel { background: var(--panel); border: 1px solid #333; padding: 20px; border-radius: 8px; }
         .panel-title { color: var(--red); font-size: 1.2rem; border-bottom: 1px dashed #333; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; }
-        
-        /* 嚴格控制表格寬度與對齊 */
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td { border: 1px solid #333; padding: 12px; text-align: center; vertical-align: middle; }
         th { background: rgba(239, 68, 68, 0.1); color: var(--red); font-weight: bold; }
         tr:hover { background: rgba(255,255,255,0.02); }
-        
-        .tier-S { color: #fbbf24; } .tier-A-plus { color: #38bdf8; } .tier-A { color: #3b82f6; }
-        .tier-B { color: #34d399; } .tier-C { color: #f97316; } .tier-D { color: var(--red); }
+        .tier-S { color: #fbbf24; } .tier-A-plus { color: #38bdf8; } .tier-A { color: #3b82f6; } .tier-B { color: #34d399; } .tier-C { color: #f97316; } .tier-D { color: var(--red); } .tier-null { color: #666; }
     </style>
 </head>
 <body>
@@ -95,10 +89,12 @@
     }
 
     function calcPts(score) {
+        if(score === null) return 0;
         if(score>=95) return 8; if(score>=85) return 6; if(score>=80) return 4;
         if(score>=70) return 3; if(score>=60) return 2; return 1;
     }
     function calcOverall(avgPts) {
+        if(avgPts === 0) return {t:'未定', c:'tier-null'};
         if(avgPts>=8) return {t:'S', c:'tier-S'}; if(avgPts>=6) return {t:'A+', c:'tier-A-plus'};
         if(avgPts>=4) return {t:'A', c:'tier-A'}; if(avgPts>=3) return {t:'B', c:'tier-B'};
         if(avgPts>=2) return {t:'C', c:'tier-C'}; return {t:'D', c:'tier-D'};
@@ -108,12 +104,22 @@
         const snap = await db.collection("users").get();
         let users = [];
         snap.forEach(doc => {
-            let data = doc.data(); let totalScore = 0, totalPts = 0;
-            SUBJECTS.forEach(s => { let sc = data.scores[s]||0; totalScore += sc; totalPts += calcPts(sc); });
-            data.avgScore = totalScore / 7; data.avgPts = totalPts / 7;
+            let data = doc.data(); let totalPts = 0, validSubs = 0, overallScoreSum = 0;
+            const hist = data.history || [];
+            SUBJECTS.forEach(sub => {
+                const subHist = hist.filter(h => h.subject === sub);
+                let avgSc = null;
+                if(subHist.length > 0) {
+                    avgSc = subHist.reduce((a,b)=>a+b.score,0) / subHist.length;
+                    validSubs++; overallScoreSum += avgSc;
+                }
+                totalPts += calcPts(avgSc);
+            });
+            data.displayAvg = validSubs === 0 ? "未定" : (overallScoreSum / validSubs).toFixed(1);
+            data.avgPts = totalPts / 7;
             users.push(data);
         });
-        users.sort((a,b) => b.avgPts - a.avgPts); // 依然依隱藏點數排序
+        users.sort((a,b) => b.avgPts - a.avgPts); 
         
         const tbody = document.getElementById('tbody'); tbody.innerHTML = "";
         if(users.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="color: #666;">無資料</td></tr>`; return; }
@@ -123,8 +129,8 @@
             tbody.innerHTML += `
                 <tr>
                     <td style="font-weight:bold; font-size:1.2rem; color:#888;">#${index + 1}</td>
-                    <td><div style="font-weight:bold;">${u.username}</div><div style="font-size:0.8rem; color:#666;">${u.loginId}</div></td>
-                    <td>${u.avgScore.toFixed(1)}</td>
+                    <td><div style="font-weight:bold; color:white;">${u.username}</div><div style="font-size:0.8rem; color:#666;">${u.loginId}</div></td>
+                    <td>${u.displayAvg}</td>
                     <td class="${ev.c}" style="font-weight:bold; font-size:1.2rem;">${ev.t}</td>
                 </tr>`;
         });
