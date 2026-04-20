@@ -3,140 +3,127 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OAA System | Student Terminal</title>
+    <title>OAA System | 高度育成高等學校</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root { --school-blue: #1a365d; --bg-gray: #f8fafc; --border: #e2e8f0; }
-        body { background: var(--bg-gray); color: #334155; font-family: sans-serif; margin: 0; display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 450px; background: white; min-height: 100vh; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
-        .header { background: var(--school-blue); color: white; padding: 25px; text-align: center; }
-        .header h1 { margin: 0; font-size: 1.2rem; letter-spacing: 2px; }
-        .content { padding: 20px; }
-        .card { border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; background: white; }
-        .rank-s { color: #d4af37; font-size: 5rem; font-weight: bold; text-align: center; margin: 10px 0; }
-        .rank-other { color: var(--school-blue); font-size: 5rem; font-weight: bold; text-align: center; margin: 10px 0; }
-        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; }
-        button { width: 100%; padding: 12px; background: var(--school-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .mission-box { background: #f1f5f9; padding: 15px; border-radius: 4px; margin-top: 10px; border-left: 4px solid var(--school-blue); }
-        .hidden { display: none; }
+        :root { --primary: #0f172a; --secondary: #3b82f6; --bg-color: #f8fafc; --border: #e2e8f0; }
+        body { margin: 0; background-color: var(--bg-color); color: #334155; font-family: sans-serif; display: flex; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 480px; background: white; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); position: relative; }
+        .hidden { display: none !important; }
+        #login-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 0 30px; text-align: center; }
+        .school-logo { width: 60px; height: 60px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 900; margin-bottom: 20px; }
+        input.oaa-input { width: 100%; padding: 15px; border: 2px solid var(--border); border-radius: 12px; font-size: 1.1rem; text-align: center; margin-bottom: 20px; box-sizing: border-box; }
+        button.btn-primary { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; }
+        header { background: var(--primary); color: white; padding: 25px 20px; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; }
+        .dashboard-content { padding: 20px; }
+        .stats-card { background: white; border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 20px; }
+        #overall-rank { font-size: 5rem; font-weight: 900; margin: 10px 0; }
+        .mission-item { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-box { background: white; padding: 30px; border-radius: 20px; width: 80%; text-align: center; }
     </style>
 </head>
 <body>
-<div class="app-container">
-    <div id="login-screen" style="padding: 50px 20px; text-align: center;">
-        <h2 style="color: var(--school-blue)">高度育成高等學校</h2>
-        <p>請輸入學員編號進行身份識別</p>
-        <input type="text" id="uid-input" placeholder="STUDENT NAME / ID">
-        <button onclick="auth()">登入系統</button>
+<div class="container">
+    <div id="login-screen">
+        <div class="school-logo">OAA</div>
+        <h1 style="color: var(--primary); margin:0;">高度育成高等學校</h1>
+        <p style="color: #94a3b8; margin-bottom: 30px;">ADVANCED NURTURING HIGH SCHOOL</p>
+        <input type="text" id="uid-input" class="oaa-input" placeholder="請輸入學員名稱 (ID)">
+        <button class="btn-primary" onclick="authenticate()">> SYSTEM LOGIN</button>
+        <p id="error-msg" style="color: #ef4444; font-size: 0.85rem; margin-top: 15px;"></p>
     </div>
 
-    <div id="main-screen" class="hidden">
-        <div class="header">
-            <h1>OVERALL ABILITY</h1>
-            <div id="display-name" style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;"></div>
-        </div>
-        <div class="content">
-            <div class="card">
-                <div style="text-align: center; color: #64748b; font-size: 0.8rem;">綜合評價</div>
-                <div id="rank-val" class="rank-other">--</div>
-                <div style="text-align: center;">平均分數: <span id="avg-val">0</span></div>
+    <div id="main-dashboard" class="hidden">
+        <header>
+            <div style="font-size: 0.8rem; color: #94a3b8;" id="display-id">UID: --------</div>
+            <h2 style="margin: 5px 0 0 0;" id="display-name">Loading...</h2>
+        </header>
+        <div class="dashboard-content">
+            <div class="stats-card">
+                <div style="color: #94a3b8; font-weight: bold;">OVERALL ABILITY</div>
+                <div id="overall-rank">--</div>
+                <div style="background: #f8fafc; padding: 8px; border-radius: 10px; border: 1px solid #e2e8f0;">平均測驗分數 <span id="avg-val" style="color: #3b82f6; font-weight:bold;">0.0</span></div>
+                <canvas id="oaaChart" style="margin-top: 15px; max-height: 250px;"></canvas>
             </div>
-            <div class="card"><canvas id="oaaChart"></canvas></div>
-            <div id="mission-area">
-                <h3 style="font-size: 1rem; color: var(--school-blue);">[ 待辦任務 ]</h3>
-                <div id="mission-list"></div>
+            <h3 style="color: #0f172a; border-left: 4px solid #3b82f6; padding-left: 10px;">待辦任務</h3>
+            <div id="mission-list"><p style="text-align: center; color: #94a3b8;">目前無任務</p></div>
+        </div>
+    </div>
+
+    <div id="modal-overlay" class="hidden">
+        <div class="modal-box">
+            <h3 id="modal-title" style="color: #0f172a; margin-top:0;">任務名稱</h3>
+            <p id="modal-sub" style="color: #94a3b8;">目標科目</p>
+            <input type="number" id="score-input" class="oaa-input" placeholder="輸入分數 (0-100)">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-primary" style="background: #f8fafc; color: #334155; border: 1px solid #e2e8f0;" onclick="closeModal()">取消</button>
+                <button class="btn-primary" onclick="submitScore()">確認送出</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A",
-        authDomain: "oaa-system-338b3.firebaseapp.com",
-        projectId: "oaa-system-338b3",
-        storageBucket: "oaa-system-338b3.firebasestorage.app",
-        messagingSenderId: "245860425104",
-        appId: "1:245860425104:web:9b224f32dd70763bda2715"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    let currentId = null, currentScores = {}, chart = null;
+    const firebaseConfig = { apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A", authDomain: "oaa-system-338b3.firebaseapp.com", projectId: "oaa-system-338b3", storageBucket: "oaa-system-338b3.firebasestorage.app", messagingSenderId: "245860425104", appId: "1:245860425104:web:9b224f32dd70763bda2715" };
+    firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
+    let currentUserDocId = null, currentScores = {}, completedMissions = [], chartInstance = null, activeMissionId = null, activeSubject = null;
 
-    async function auth() {
-        const name = document.getElementById('uid-input').value.trim();
-        if(!name) return;
-        const snap = await db.collection("users").where("username", "==", name).get();
-        if(!snap.empty) {
-            const doc = snap.docs[0];
-            currentId = doc.id;
-            loadData(doc.data());
-        } else {
-            const res = await db.collection("users").add({
-                username: name,
-                scores: {"國文":0,"英文":0,"數學":0,"物理":0,"地科":0,"公民":0,"歷史":0},
-                completed: []
-            });
-            currentId = res.id;
-            loadData({username: name, scores: {}});
+    async function authenticate() {
+        const name = document.getElementById('uid-input').value.trim(), msg = document.getElementById('error-msg');
+        if(!name) { msg.innerText = "請輸入有效的學員名稱"; return; }
+        msg.innerText = "連線中..."; msg.style.color = "#3b82f6";
+        try {
+            const snap = await db.collection("users").where("username", "==", name).get();
+            if(!snap.empty) {
+                const doc = snap.docs[0]; currentUserDocId = doc.id; setup(doc.data().username, doc.data().scores, doc.data().completedMissions);
+            } else {
+                const initData = { username: name, scores: {"國文":0,"英文":0,"數學":0,"物理":0,"地科":0,"公民":0,"歷史":0}, completedMissions: [] };
+                const docRef = await db.collection("users").add(initData); currentUserDocId = docRef.id; setup(initData.username, initData.scores, initData.completedMissions);
+            }
+        } catch(e) { msg.innerText = "連線失敗"; msg.style.color = "#ef4444"; }
+    }
+
+    function setup(name, scores, completed) {
+        document.getElementById('login-screen').classList.add('hidden'); document.getElementById('main-dashboard').classList.remove('hidden');
+        document.getElementById('display-name').innerText = name; document.getElementById('display-id').innerText = `UID: ${currentUserDocId.substring(0,8).toUpperCase()}`;
+        currentScores = scores || {}; completedMissions = completed || []; updateRadar(); listenToMissions();
+    }
+
+    function updateRadar() {
+        const subjects = ["國文","英文","數學","物理","地科","公民","歷史"], vals = subjects.map(s => currentScores[s] || 0), avg = vals.reduce((a,b)=>a+b,0) / 7;
+        document.getElementById('avg-val').innerText = avg.toFixed(1);
+        let rank = "E", color = "#ef4444";
+        if(avg >= 95) { rank = "S"; color = "#eab308"; } else if(avg >= 85) { rank = "A+"; color = "#3b82f6"; } else if(avg >= 80) { rank = "A"; color = "#3b82f6"; } else if(avg >= 70) { rank = "B"; color = "#10b981"; } else if(avg >= 60) { rank = "C"; color = "#f59e0b"; }
+        const rEl = document.getElementById('overall-rank'); rEl.innerText = rank; rEl.style.color = color;
+
+        const ctx = document.getElementById('oaaChart').getContext('2d');
+        if(chartInstance) { chartInstance.data.datasets[0].data = vals; chartInstance.update(); }
+        else {
+            chartInstance = new Chart(ctx, { type: 'radar', data: { labels: subjects, datasets: [{ data: vals, backgroundColor: 'rgba(59, 130, 246, 0.1)', borderColor: '#3b82f6', borderWidth: 2, pointBackgroundColor: '#fff', pointBorderColor: '#3b82f6' }] }, options: { scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks: { display: false } } }, plugins: { legend: { display: false } } } });
         }
     }
 
-    function loadData(data) {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('main-screen').classList.remove('hidden');
-        document.getElementById('display-name').innerText = `ID: ${data.username}`;
-        currentScores = data.scores || {};
-        updateUI();
-        listenMissions(data.completed || []);
-    }
-
-    function updateUI() {
-        const subs = ["國文","英文","數學","物理","地科","公民","歷史"];
-        const vals = subs.map(s => currentScores[s] || 0);
-        const avg = vals.reduce((a,b)=>a+b,0)/7;
-        document.getElementById('avg-val').innerText = avg.toFixed(1);
-        let rank = "E";
-        if(avg>=95) rank="S"; else if(avg>=85) rank="A+"; else if(avg>=80) rank="A";
-        else if(avg>=70) rank="B"; else if(avg>=60) rank="C";
-        const rEl = document.getElementById('rank-val');
-        rEl.innerText = rank;
-        rEl.className = rank === "S" ? "rank-s" : "rank-other";
-
-        const ctx = document.getElementById('oaaChart').getContext('2d');
-        if(chart) chart.destroy();
-        chart = new Chart(ctx, {
-            type: 'radar',
-            data: { labels: subs, datasets: [{ data: vals, backgroundColor: 'rgba(26,54,93,0.1)', borderColor: '#1a365d', borderWidth: 2 }] },
-            options: { scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks: { display: false } } }, plugins: { legend: { display: false } } }
-        });
-    }
-
-    function listenMissions(done) {
+    function listenToMissions() {
         db.collection("missions").orderBy("timestamp", "desc").onSnapshot(snap => {
-            const list = document.getElementById('mission-list');
-            list.innerHTML = "";
+            const listEl = document.getElementById('mission-list'); listEl.innerHTML = ""; let hasActive = false;
             snap.forEach(doc => {
-                const m = doc.data();
-                if(done.includes(doc.id)) return;
-                const div = document.createElement('div');
-                div.className = "mission-box";
-                div.innerHTML = `<b>${m.title}</b> (${m.subject})<br><button onclick="sendScore('${doc.id}','${m.subject}')" style="margin-top:10px; padding:5px;">填寫分數</button>`;
-                list.appendChild(div);
+                if(completedMissions.includes(doc.id)) return; hasActive = true; const data = doc.data();
+                listEl.innerHTML += `<div class="mission-item"><div><h4 style="margin:0 0 5px 0; color:#0f172a;">${data.title}</h4><p style="margin:0; font-size:0.85rem; color:#94a3b8;">科目：${data.subject}</p></div><button style="background:#3b82f6; color:white; border:none; padding:8px 16px; border-radius:8px; font-weight:bold; cursor:pointer;" onclick="openModal('${doc.id}', '${data.subject}', '${data.title}')">填寫</button></div>`;
             });
+            if(!hasActive) listEl.innerHTML = '<p style="text-align: center; color: #94a3b8;">目前無指派任務</p>';
         });
     }
 
-    async function sendScore(mid, sub) {
-        const score = prompt(`請輸入 ${sub} 的分數:`);
-        if(!score || isNaN(score)) return;
-        await db.collection("users").doc(currentId).update({
-            [`scores.${sub}`]: Number(score),
-            completed: firebase.firestore.FieldValue.arrayUnion(mid)
-        });
-        location.reload();
+    function openModal(mid, sub, title) { activeMissionId = mid; activeSubject = sub; document.getElementById('modal-title').innerText = title; document.getElementById('modal-sub').innerText = `目標科目：${sub}`; document.getElementById('score-input').value = ""; document.getElementById('modal-overlay').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); }
+    async function submitScore() {
+        const val = parseInt(document.getElementById('score-input').value);
+        if(isNaN(val) || val < 0 || val > 100) { alert("請輸入 0-100 的數字"); return; }
+        currentScores[activeSubject] = val; completedMissions.push(activeMissionId); updateRadar(); closeModal(); listenToMissions();
+        await db.collection("users").doc(currentUserDocId).update({ [`scores.${activeSubject}`]: val, completedMissions: firebase.firestore.FieldValue.arrayUnion(activeMissionId) });
     }
 </script>
 </body>
