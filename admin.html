@@ -10,18 +10,16 @@
         body { margin: 0; background: var(--bg); color: #fff; font-family: monospace; display: flex; justify-content: center; padding: 20px; }
         .hidden { display: none !important; }
         
-        /* 登入區 */
         .auth-box { border: 1px solid var(--red); padding: 40px; text-align: center; margin-top: 100px; background: rgba(255,0,0,0.05); }
         input.sys-in { width: 100%; padding: 12px; background: #000; border: 1px solid var(--red); color: white; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
         button.sys-btn { width: 100%; padding: 12px; background: var(--red); color: black; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button.sys-btn:hover { box-shadow: 0 0 15px var(--red-glow); background: #fca5a5; }
 
-        /* 主佈局 */
         #dashboard { width: 100%; max-width: 1000px; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
         .panel { background: var(--panel); border: 1px solid #333; padding: 20px; border-radius: 8px; }
         .panel-title { color: var(--red); font-size: 1.2rem; border-bottom: 1px dashed #333; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; }
         
-        /* 表格對齊優化 */
+        /* 嚴格控制表格寬度與對齊 */
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th, td { border: 1px solid #333; padding: 12px; text-align: center; vertical-align: middle; }
         th { background: rgba(239, 68, 68, 0.1); color: var(--red); font-weight: bold; }
@@ -57,16 +55,16 @@
 
     <div class="panel">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div class="panel-title" style="margin: 0; border: none;">> STUDENT ROSTER (總評以點數制計算)</div>
+            <div class="panel-title" style="margin: 0; border: none;">> STUDENT ROSTER (天梯榜)</div>
             <button onclick="fetchData()" style="background: transparent; border: 1px solid var(--red); color: var(--red); padding: 5px 15px; cursor: pointer;">REFRESH</button>
         </div>
         <table>
             <thead>
                 <tr>
-                    <th style="width: 25%;">ID / NAME</th>
+                    <th style="width: 15%;">RANK</th>
+                    <th style="width: 40%;">ID / NAME</th>
                     <th style="width: 25%;">AVG SCORE</th>
-                    <th style="width: 25%;">AVG PTS</th>
-                    <th style="width: 25%;">OVERALL TIER</th>
+                    <th style="width: 20%;">EVALUATION</th>
                 </tr>
             </thead>
             <tbody id="tbody">
@@ -89,15 +87,13 @@
     }
 
     async function dispatch() {
-        const title = document.getElementById('title').value.trim();
-        const sub = document.getElementById('sub').value;
+        const title = document.getElementById('title').value.trim(), sub = document.getElementById('sub').value;
         if(!title) return;
         await db.collection("missions").add({ title: title, subject: sub, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
         document.getElementById('dispatch-msg').innerText = "MISSION UPLOADED!";
         document.getElementById('title').value = ""; setTimeout(() => document.getElementById('dispatch-msg').innerText="", 3000);
     }
 
-    // 點數算法 (與前台同步)
     function calcPts(score) {
         if(score>=95) return 8; if(score>=85) return 6; if(score>=80) return 4;
         if(score>=70) return 3; if(score>=60) return 2; return 1;
@@ -117,18 +113,18 @@
             data.avgScore = totalScore / 7; data.avgPts = totalPts / 7;
             users.push(data);
         });
-        users.sort((a,b) => b.avgPts - a.avgPts);
+        users.sort((a,b) => b.avgPts - a.avgPts); // 依然依隱藏點數排序
         
         const tbody = document.getElementById('tbody'); tbody.innerHTML = "";
         if(users.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="color: #666;">無資料</td></tr>`; return; }
         
-        users.forEach(u => {
+        users.forEach((u, index) => {
             const ev = calcOverall(u.avgPts);
             tbody.innerHTML += `
                 <tr>
+                    <td style="font-weight:bold; font-size:1.2rem; color:#888;">#${index + 1}</td>
                     <td><div style="font-weight:bold;">${u.username}</div><div style="font-size:0.8rem; color:#666;">${u.loginId}</div></td>
                     <td>${u.avgScore.toFixed(1)}</td>
-                    <td style="color:#38bdf8;">${u.avgPts.toFixed(2)}</td>
                     <td class="${ev.c}" style="font-weight:bold; font-size:1.2rem;">${ev.t}</td>
                 </tr>`;
         });
