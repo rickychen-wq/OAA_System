@@ -2,107 +2,137 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>OAA Admin | Command Center Pro</title>
+    <title>OAA COMMAND CENTER</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
-        :root { --bg-dark: #050505; --panel-bg: rgba(20, 5, 5, 0.8); --border-red: #ff3333; --text-main: #ff4444; --glow: 0 0 15px rgba(255, 51, 51, 0.5); }
-        body { margin: 0; background-color: var(--bg-dark); color: var(--text-main); font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden; background-image: linear-gradient(rgba(255, 0, 0, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 0, 0.03) 1px, transparent 1px); background-size: 30px 30px; }
+        :root { --bg: #050505; --panel: #111; --red: #ef4444; --red-glow: rgba(239, 68, 68, 0.3); }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: monospace; display: flex; justify-content: center; padding: 20px; }
         .hidden { display: none !important; }
-        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; background: #000; z-index: 9999; }
-        .auth-box { border: 1px solid var(--border-red); padding: 40px; text-align: center; background: rgba(255,0,0,0.05); box-shadow: var(--glow); width: 320px; }
-        input.admin-input { width: 100%; background: #111; color: white; border: 1px solid var(--border-red); padding: 12px; text-align: center; margin: 20px 0; font-size: 1.2rem; }
-        button.cyber-btn { width: 100%; background: transparent; color: var(--text-main); border: 1px solid var(--border-red); padding: 12px; font-weight: bold; cursor: pointer; }
-        button.cyber-btn:hover { background: var(--text-main); color: #000; box-shadow: var(--glow); }
-        #dashboard { display: grid; grid-template-columns: 320px 1fr; height: 100vh; }
-        aside { border-right: 1px solid var(--border-red); padding: 25px; background: rgba(10,0,0,0.8); display: flex; flex-direction: column; gap: 15px; }
-        select, input[type="text"] { width: 100%; background: #111; border: 1px solid #883333; color: white; padding: 12px; margin-bottom: 10px; }
-        main { padding: 30px; overflow-y: auto; }
-        .card { border: 1px solid var(--border-red); background: var(--panel-bg); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.5); }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: rgba(0,0,0,0.5); }
-        th, td { border: 1px solid rgba(255,51,51,0.3); padding: 12px; text-align: center; }
-        th { background: rgba(255,0,0,0.15); color: #883333; }
+        
+        /* 登入區 */
+        .auth-box { border: 1px solid var(--red); padding: 40px; text-align: center; margin-top: 100px; background: rgba(255,0,0,0.05); }
+        input.sys-in { width: 100%; padding: 12px; background: #000; border: 1px solid var(--red); color: white; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
+        button.sys-btn { width: 100%; padding: 12px; background: var(--red); color: black; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button.sys-btn:hover { box-shadow: 0 0 15px var(--red-glow); background: #fca5a5; }
+
+        /* 主佈局 */
+        #dashboard { width: 100%; max-width: 1000px; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        .panel { background: var(--panel); border: 1px solid #333; padding: 20px; border-radius: 8px; }
+        .panel-title { color: var(--red); font-size: 1.2rem; border-bottom: 1px dashed #333; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; }
+        
+        /* 表格對齊優化 */
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid #333; padding: 12px; text-align: center; vertical-align: middle; }
+        th { background: rgba(239, 68, 68, 0.1); color: var(--red); font-weight: bold; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+        
+        .tier-S { color: #fbbf24; } .tier-A-plus { color: #38bdf8; } .tier-A { color: #3b82f6; }
+        .tier-B { color: #34d399; } .tier-C { color: #f97316; } .tier-D { color: var(--red); }
     </style>
 </head>
 <body>
-    <div id="auth-overlay">
-        <div class="auth-box">
-            <h1 style="margin: 0 0 5px 0; text-shadow: 0 0 10px red;">RESTRICTED AREA</h1>
-            <p style="color: #883333; margin:0; font-size:0.8rem;">OAA COMMAND CENTER</p>
-            <input type="password" id="passcode" class="admin-input" placeholder="ENTER CODE">
-            <button class="cyber-btn" onclick="verifyCode()">> VERIFY & ENTER</button>
-            <p id="auth-msg" style="color: red; margin-top: 10px; font-size: 0.8rem;"></p>
+
+<div id="auth-screen">
+    <div class="auth-box">
+        <h1 style="color: var(--red); margin-top: 0;">OAA_ADMIN_ACCESS</h1>
+        <input type="password" id="admin-pw" class="sys-in" placeholder="ENTER ACCESS CODE">
+        <button class="sys-btn" onclick="verifyAdmin()">VERIFY</button>
+        <p id="msg" style="color: var(--red); margin-top: 15px;"></p>
+    </div>
+</div>
+
+<div id="dashboard" class="hidden">
+    <div class="panel">
+        <div class="panel-title">> MISSION DISPATCHER</div>
+        <label style="color: #888; font-size: 0.9rem;">TARGET SUBJECT</label>
+        <select id="sub" class="sys-in" style="text-align: left;">
+            <option>國文</option><option>英文</option><option>數學</option><option>物理</option><option>地科</option><option>公民</option><option>歷史</option>
+        </select>
+        <label style="color: #888; font-size: 0.9rem;">MISSION TITLE</label>
+        <input type="text" id="title" class="sys-in" style="text-align: left;" placeholder="例如: 模擬考">
+        <button class="sys-btn" onclick="dispatch()">> DISPATCH</button>
+        <div id="dispatch-msg" style="text-align: center; margin-top: 15px; color: #34d399; font-weight: bold;"></div>
+    </div>
+
+    <div class="panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div class="panel-title" style="margin: 0; border: none;">> STUDENT ROSTER (總評以點數制計算)</div>
+            <button onclick="fetchData()" style="background: transparent; border: 1px solid var(--red); color: var(--red); padding: 5px 15px; cursor: pointer;">REFRESH</button>
         </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 25%;">ID / NAME</th>
+                    <th style="width: 25%;">AVG SCORE</th>
+                    <th style="width: 25%;">AVG PTS</th>
+                    <th style="width: 25%;">OVERALL TIER</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                <tr><td colspan="4" style="color: #666;">載入中...</td></tr>
+            </tbody>
+        </table>
     </div>
+</div>
 
-    <div id="dashboard" class="hidden">
-        <aside>
-            <div style="font-size: 1.2rem; border-bottom: 1px dashed #883333; padding-bottom: 10px; margin-bottom: 10px; font-weight: bold;">> MISSION DISPATCHER</div>
-            <label style="color: #883333; font-size: 0.9rem;">TARGET SUBJECT</label>
-            <select id="subject-select">
-                <option>國文</option><option>英文</option><option>數學</option><option>物理</option><option>地科</option><option>公民</option><option>歷史</option>
-            </select>
-            <label style="color: #883333; font-size: 0.9rem;">MISSION TITLE</label>
-            <input type="text" id="mission-title" placeholder="例如: 第三次段考">
-            <button class="cyber-btn" onclick="dispatchMission()" style="margin-top: 20px;">> EXECUTE PROTOCOL</button>
-            <div id="status-msg" style="text-align: center; font-size: 0.9rem; margin-top: 15px; height: 20px;"></div>
-        </aside>
-        <main>
-            <div class="card" style="display: flex; gap: 20px;">
-                <div><div style="color: #883333;">總人數</div><div style="font-size: 3rem; font-weight: bold;" id="total-users">0</div></div>
-                <div><div style="color: #883333;">任務數</div><div style="font-size: 3rem; font-weight: bold;" id="total-missions">0</div></div>
-            </div>
-            <div class="card">
-                <div style="font-size: 1.2rem; font-weight: bold; display: flex; justify-content: space-between;">
-                    <span>> STUDENT ROSTER (即時戰力榜)</span>
-                    <button onclick="fetchDatabase()" style="background:none; border:1px solid red; color:red; cursor:pointer;">[ REFRESH ]</button>
-                </div>
-                <table>
-                    <thead><tr><th>UID</th><th>NAME</th><th>AVG</th><th>RANK</th></tr></thead>
-                    <tbody id="student-tbody"><tr><td colspan="4">LOADING...</td></tr></tbody>
-                </table>
-            </div>
-        </main>
-    </div>
+<script>
+    const firebaseConfig = { apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A", authDomain: "oaa-system-338b3.firebaseapp.com", projectId: "oaa-system-338b3", storageBucket: "oaa-system-338b3.firebasestorage.app", messagingSenderId: "245860425104", appId: "1:245860425104:web:9b224f32dd70763bda2715" };
+    firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
+    const SUBJECTS = ["國文","英文","數學","物理","地科","公民","歷史"];
 
-    <script>
-        const firebaseConfig = { apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A", authDomain: "oaa-system-338b3.firebaseapp.com", projectId: "oaa-system-338b3", storageBucket: "oaa-system-338b3.firebasestorage.app", messagingSenderId: "245860425104", appId: "1:245860425104:web:9b224f32dd70763bda2715" };
-        firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
+    function verifyAdmin() {
+        if(document.getElementById('admin-pw').value === 'Ricky_0414') {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden'); fetchData();
+        } else { document.getElementById('msg').innerText = "ACCESS DENIED"; }
+    }
 
-        function verifyCode() {
-            if(document.getElementById('passcode').value === "Ricky_0414") {
-                document.getElementById('auth-overlay').classList.add('hidden');
-                document.getElementById('dashboard').classList.remove('hidden'); fetchDatabase();
-            } else { document.getElementById('auth-msg').innerText = "ACCESS DENIED"; }
-        }
+    async function dispatch() {
+        const title = document.getElementById('title').value.trim();
+        const sub = document.getElementById('sub').value;
+        if(!title) return;
+        await db.collection("missions").add({ title: title, subject: sub, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        document.getElementById('dispatch-msg').innerText = "MISSION UPLOADED!";
+        document.getElementById('title').value = ""; setTimeout(() => document.getElementById('dispatch-msg').innerText="", 3000);
+    }
 
-        async function dispatchMission() {
-            const title = document.getElementById('mission-title').value.trim(), sub = document.getElementById('subject-select').value, msgEl = document.getElementById('status-msg');
-            if(!title) { msgEl.innerText = "[ERROR] 名稱不可為空"; msgEl.style.color="red"; return; }
-            msgEl.innerText = "UPLOADING..."; msgEl.style.color = "yellow";
-            try {
-                await db.collection("missions").add({ title: title, subject: sub, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                msgEl.innerText = "[SUCCESS] 任務已廣播！"; msgEl.style.color = "#00ff88"; document.getElementById('mission-title').value = ""; fetchDatabase();
-            } catch(e) { msgEl.innerText = "[ERROR] 連線異常"; msgEl.style.color="red"; }
-        }
+    // 點數算法 (與前台同步)
+    function calcPts(score) {
+        if(score>=95) return 8; if(score>=85) return 6; if(score>=80) return 4;
+        if(score>=70) return 3; if(score>=60) return 2; return 1;
+    }
+    function calcOverall(avgPts) {
+        if(avgPts>=8) return {t:'S', c:'tier-S'}; if(avgPts>=6) return {t:'A+', c:'tier-A-plus'};
+        if(avgPts>=4) return {t:'A', c:'tier-A'}; if(avgPts>=3) return {t:'B', c:'tier-B'};
+        if(avgPts>=2) return {t:'C', c:'tier-C'}; return {t:'D', c:'tier-D'};
+    }
 
-        async function fetchDatabase() {
-            try {
-                const uSnap = await db.collection("users").get(), mSnap = await db.collection("missions").get();
-                document.getElementById('total-users').innerText = uSnap.size; document.getElementById('total-missions').innerText = mSnap.size;
-                let students = [];
-                uSnap.forEach(doc => { let data = doc.data(), vals = Object.values(data.scores || {}); data.avg = vals.length > 0 ? (vals.reduce((a,b)=>a+b,0)/7) : 0; data.uid = doc.id; students.push(data); });
-                students.sort((a,b) => b.avg - a.avg);
-                const tbody = document.getElementById('student-tbody'); tbody.innerHTML = "";
-                if(students.length === 0) { tbody.innerHTML = `<tr><td colspan="4">尚未有學員註冊</td></tr>`; return; }
-                students.forEach(s => {
-                    let rank = "E", c = "#ff4444";
-                    if(s.avg >= 95) { rank = "S"; c="#ffdf00"; } else if(s.avg >= 85) { rank = "A+"; c="#00f2ff"; } else if(s.avg >= 80) { rank = "A"; c="#00f2ff"; } else if(s.avg >= 70) { rank = "B"; c="#00ff88"; } else if(s.avg >= 60) { rank = "C"; c="#ffcc00"; }
-                    tbody.innerHTML += `<tr><td>${s.uid.substring(0,8).toUpperCase()}</td><td>${s.username}</td><td>${s.avg.toFixed(1)}</td><td style="color:${c}; font-weight:bold;">${rank}</td></tr>`;
-                });
-            } catch(e) { document.getElementById('student-tbody').innerHTML = `<tr><td colspan="4" style="color:red;">連線失敗</td></tr>`; }
-        }
-    </script>
+    async function fetchData() {
+        const snap = await db.collection("users").get();
+        let users = [];
+        snap.forEach(doc => {
+            let data = doc.data(); let totalScore = 0, totalPts = 0;
+            SUBJECTS.forEach(s => { let sc = data.scores[s]||0; totalScore += sc; totalPts += calcPts(sc); });
+            data.avgScore = totalScore / 7; data.avgPts = totalPts / 7;
+            users.push(data);
+        });
+        users.sort((a,b) => b.avgPts - a.avgPts);
+        
+        const tbody = document.getElementById('tbody'); tbody.innerHTML = "";
+        if(users.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="color: #666;">無資料</td></tr>`; return; }
+        
+        users.forEach(u => {
+            const ev = calcOverall(u.avgPts);
+            tbody.innerHTML += `
+                <tr>
+                    <td><div style="font-weight:bold;">${u.username}</div><div style="font-size:0.8rem; color:#666;">${u.loginId}</div></td>
+                    <td>${u.avgScore.toFixed(1)}</td>
+                    <td style="color:#38bdf8;">${u.avgPts.toFixed(2)}</td>
+                    <td class="${ev.c}" style="font-weight:bold; font-size:1.2rem;">${ev.t}</td>
+                </tr>`;
+        });
+    }
+</script>
 </body>
 </html>
