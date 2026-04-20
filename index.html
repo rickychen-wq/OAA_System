@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAA System | High Command Center</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+    <style>
+        /* 核心變數設定 */
+        :root {
+            --bg-dark: #050505;
+            --panel-bg: rgba(20, 5, 5, 0.8);
+            --border-red: #ff3333;
+            --text-main: #ff4444;
+            --text-muted: #883333;
+            --glow: 0 0 15px rgba(255, 51, 51, 0.5);
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Share Tech Mono', monospace; /* 終端機字體 */
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(255, 0, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        /* 滾動條美化 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-red); }
+
+        /* 通用隱藏類別 */
+        .hidden { display: none !important; }
+
+        /* ================= 登入與門禁畫面 ================= */
+        #auth-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        
+        .auth-box {
+            border: 1px solid var(--border-red);
+            padding: 40px; text-align: center;
+            background: rgba(255,0,0,0.05); box-shadow: var(--glow);
+            width: 350px;
+        }
+
+        .auth-box h1 { font-size: 2rem; margin-bottom: 5px; text-shadow: 0 0 10px red; }
+        .auth-box p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 30px; }
+
+        input.admin-input {
+            width: 100%; background: #111; color: white;
+            border: 1px solid var(--border-red); padding: 12px;
+            box-sizing: border-box; text-align: center;
+            font-family: inherit; margin-bottom: 20px; font-size: 1.1rem;
+            letter-spacing: 5px;
+        }
+        input.admin-input:focus { outline: none; box-shadow: var(--glow); }
+
+        /* ================= 按鈕樣式 ================= */
+        button.cyber-btn {
+            background: transparent; color: var(--text-main);
+            border: 1px solid var(--border-red); padding: 12px 24px;
+            font-family: inherit; font-weight: bold; cursor: pointer;
+            transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px;
+            width: 100%;
+        }
+        button.cyber-btn:hover {
+            background: var(--text-main); color: #000; box-shadow: var(--glow);
+        }
+
+        /* ================= 主控制台佈局 ================= */
+        #dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            grid-template-rows: 60px 1fr;
+            height: 100vh;
+        }
+
+        /* 頂部導航 */
+        header {
+            grid-column: 1 / -1;
+            border-bottom: 1px solid var(--border-red);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; background: var(--panel-bg);
+        }
+        header h2 { margin: 0; font-size: 1.2rem; text-shadow: var(--glow); }
+        .sys-status { color: #00ff00; font-size: 0.9rem; animation: blink 2s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* 左側發布器 (側邊欄) */
+        aside {
+            border-right: 1px solid var(--border-red);
+            padding: 20px; background: rgba(10,0,0,0.5);
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        .panel-title { font-size: 1.1rem; border-bottom: 1px dashed var(--text-muted); padding-bottom: 10px; margin-bottom: 15px; }
+
+        .form-group label { display: block; color: var(--text-muted); margin-bottom: 5px; font-size: 0.9rem; }
+        .form-group select, .form-group input {
+            width: 100%; background: #111; border: 1px solid var(--text-muted);
+            color: white; padding: 10px; font-family: inherit; box-sizing: border-box;
+        }
+        .form-group select:focus, .form-group input:focus { border-color: var(--text-main); outline: none; }
+
+        #dispatch-status { font-size: 0.85rem; text-align: center; min-height: 20px; margin-top: 10px; transition: color 0.3s; }
+
+        /* 右側主畫面 (數據與列表) */
+        main {
+            padding: 20px; overflow-y: auto;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+        }
+
+        /* 數據卡片 */
+        .card {
+            border: 1px solid var(--border-red); background: var(--panel-bg); padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.5); position: relative;
+        }
+        
+        .stat-value { font-size: 3rem; font-weight: bold; margin: 10px 0 0 0; text-shadow: var(--glow); }
+        
+        /* 學生名冊表格 */
+        .roster-container { grid-column: 1 / -1; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid rgba(255,51,51,0.3); padding: 12px; text-align: center; }
+        th { background: rgba(255,0,0,0.1); color: var(--text-muted); }
+        tr:hover { background: rgba(255,0,0,0.05); }
+        
+        /* 評級顏色設定 */
+        .rank-S { color: #ffdf00; font-weight: bold; text-shadow: 0 0 5px #ffdf00;}
+        .rank-A { color: #00f2ff; }
+        .rank-B { color: #00ff88; }
+        .rank-C { color: #ffcc00; }
+        .rank-D, .rank-E { color: #ff4444; }
+
+    </style>
+</head>
+<body>
+
+    <div id="auth-overlay">
+        <div class="auth-box">
+            <h1>RESTRICTED AREA</h1>
+            <p>OAA SYSTEM HIGH COMMAND</p>
+            
+            <div id="step-google">
+                <button class="cyber-btn" onclick="adminGoogleLogin()">> INITIATE LOGIN</button>
+                <p id="auth-msg" style="margin-top: 15px; font-size: 0.8rem; color: #ff4444;"></p>
+            </div>
+
+            <div id="step-passcode" class="hidden">
+                <label style="color: var(--text-muted); font-size: 0.8rem; display:block; margin-bottom:5px;">ENTER OVERRIDE CODE:</label>
+                <input type="password" id="admin-passcode" class="admin-input" placeholder="****">
+                <button class="cyber-btn" onclick="verifyPasscode()">> VERIFY</button>
+                <p id="pass-msg" style="margin-top: 15px; font-size: 0.8rem; color: #ff4444;"></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="dashboard" class="hidden">
+        
+        <header>
+            <h2>[ OAA_ADMIN_TERMINAL ]</h2>
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <span class="sys-status">● SYSTEM ONLINE</span>
+                <span style="font-size: 0.9rem; color: var(--text-muted);">ID: COMMANDER</span>
+            </div>
+        </header>
+
+        <aside>
+            <div class="panel-title">> MISSION DISPATCHER</div>
+            
+            <div class="form-group">
+                <label>TARGET SUBJECT</label>
+                <select id="subject">
+                    <option value="國文">國文 (Chinese)</option>
+                    <option value="英文">英文 (English)</option>
+                    <option value="數學">數學 (Math)</option>
+                    <option value="物理">物理 (Physics)</option>
+                    <option value="地科">地科 (Earth Sci)</option>
+                    <option value="公民">公民 (Civics)</option>
+                    <option value="歷史">歷史 (History)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>MISSION TITLE</label>
+                <input type="text" id="missionName" placeholder="e.g., L3 突擊測驗">
+            </div>
+
+            <div class="form-group">
+                <label>DEADLINE (自動歸零期限)</label>
+                <input type="text" value="TODAY 23:59" disabled style="background:#0a0a0a; color:#555; text-align:center;">
+            </div>
+
+            <button class="cyber-btn" onclick="dispatchMission()" style="margin-top: 10px;">> EXECUTE PROTOCOL</button>
+            <div id="dispatch-status"></div>
+        </aside>
+
+        <main>
+            <div class="card">
+                <div class="panel-title">REGISTERED STUDENTS</div>
+                <div class="stat-value" id="total-students">0</div>
+            </div>
+
+            <div class="card">
+                <div class="panel-title">ACTIVE MISSIONS</div>
+                <div class="stat-value" id="total-missions">0</div>
+            </div>
+
+            <div class="card roster-container">
+                <div class="panel-title" style="display: flex; justify-content: space-between;">
+                    <span>> STUDENT ROSTER (即時戰力榜)</span>
+                    <button onclick="fetchData()" style="background:none; border:1px solid red; color:red; cursor:pointer;">[ REFRESH ]</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>UID</th>
+                            <th>NAME</th>
+                            <th>AVG SCORE</th>
+                            <th>OVERALL RANK</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-list">
+                        <tr><td colspan="5">LOADING DATABASE...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ------------------ Firebase 設置 (你的專屬金鑰) ------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A",
+            authDomain: "oaa-system-338b3.firebaseapp.com",
+            projectId: "oaa-system-338b3",
+            storageBucket: "oaa-system-338b3.firebasestorage.app",
+            messagingSenderId: "245860425104",
+            appId: "1:245860425104:web:9b224f32dd70763bda2715",
+            measurementId: "G-LVT6LR57S9"
+        };
+
+        // 初始化
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // ------------------ 門禁邏輯 ------------------
+        // 你專屬的後台密碼 (可以自己改，這裡預設設為 5070)
+        const SECRET_CODE = "5070"; 
+
+        function adminGoogleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).catch(err => {
+                document.getElementById('auth-msg').innerText = "登入失敗: " + err.message;
+            });
+        }
+
+        // 監聽登入狀態
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // 登入成功，切換到輸入密碼層
+                document.getElementById('step-google').classList.add('hidden');
+                document.getElementById('step-passcode').classList.remove('hidden');
+            }
+        });
+
+        function verifyPasscode() {
+            const input = document.getElementById('admin-passcode').value;
+            if (input === SECRET_CODE) {
+                // 密碼正確，進入系統
+                document.getElementById('auth-overlay').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                fetchData(); // 載入全校資料
+            } else {
+                document.getElementById('pass-msg').innerText = "ACCESS DENIED.";
+                document.getElementById('admin-passcode').value = "";
+            }
+        }
+
+        // ------------------ 抓取與顯示數據 ------------------
+        async function fetchData() {
+            try {
+                // 1. 抓取學生資料
+                const usersSnapshot = await db.collection("users").get();
+                const students = [];
+                usersSnapshot.forEach(doc => {
+                    const data = doc.data();
+                    data.uid = doc.id;
+                    students.push(data);
+                });
+
+                // 2. 抓取任務數量
+                const missionsSnapshot = await db.collection("missions").get();
+                
+                // 更新數字儀表板
+                document.getElementById('total-students').innerText = students.length;
+                document.getElementById('total-missions').innerText = missionsSnapshot.size;
+
+                // 3. 渲染學生列表
+                renderRoster(students);
+
+            } catch (error) {
+                console.error("讀取資料庫失敗:", error);
+                alert("讀取資料失敗，請確認 Firebase 權限。");
+            }
+        }
+
+        function renderRoster(students) {
+            const tbody = document.getElementById('student-list');
+            tbody.innerHTML = ""; // 清空
+
+            if (students.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="color: #555;">NO RECORDS FOUND</td></tr>`;
+                return;
+            }
+
+            // 依據平均分排序 (高到低)
+            students.forEach(student => {
+                const scores = Object.values(student.scores || {});
+                const avg = scores.length > 0 ? (scores.reduce((a,b)=>a+b, 0) / scores.length) : 0;
+                student.avgScore = avg;
+            });
+            students.sort((a, b) => b.avgScore - a.avgScore);
+
+            // 產生表格 HTML
+            students.forEach(student => {
+                const avg = student.avgScore;
+                
+                // 評級邏輯 (與前台一致)
+                let rank = "E", rankClass = "rank-E";
+                if (avg >= 95) { rank = "S"; rankClass = "rank-S"; }
+                else if (avg >= 85) { rank = "A+"; rankClass = "rank-A"; }
+                else if (avg >= 80) { rank = "A"; rankClass = "rank-A"; }
+                else if (avg >= 70) { rank = "B"; rankClass = "rank-B"; }
+                else if (avg >= 60) { rank = "C"; rankClass = "rank-C"; }
+                else { rank = "D"; rankClass = "rank-D"; }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="color: #555; font-size:0.8rem;">${student.uid.substring(0,8).toUpperCase()}</td>
+                    <td style="font-weight:bold; color:white;">${student.username}</td>
+                    <td>${avg.toFixed(1)}</td>
+                    <td class="${rankClass}">${rank}</td>
+                    <td style="color: #00ff88;">ALIVE</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ------------------ 派發任務邏輯 ------------------
+        async function dispatchMission() {
+            const subject = document.getElementById('subject').value;
+            const title = document.getElementById('missionName').value.trim();
+            const statusEl = document.getElementById('dispatch-status');
+
+            if (!title) {
+                statusEl.innerText = "[ ERROR ] 任務代號不可為空！";
+                statusEl.style.color = "#ff4444";
+                return;
+            }
+
+            statusEl.innerText = "[ PROCESSING ] 上傳資料庫中...";
+            statusEl.style.color = "#ffcc00";
+
+            try {
+                // 寫入 Firebase
+                await db.collection("missions").add({
+                    subject: subject,
+                    title: title,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    active: true
+                });
+
+                statusEl.innerText = "[ SUCCESS ] 任務已廣播至全校終端！";
+                statusEl.style.color = "#00ff88";
+                document.getElementById('missionName').value = ""; // 清空輸入框
+                
+                // 重新抓取數據更新儀表板
+                fetchData();
+
+                // 3 秒後清除提示
+                setTimeout(() => { statusEl.innerText = ""; }, 3000);
+            } catch (error) {
+                console.error("發布失敗:", error);
+                statusEl.innerText = "[ ERROR ] 伺服器連線中斷。";
+                statusEl.style.color = "#ff4444";
+            }
+        }
+    </script>
+</body>
+</html>
