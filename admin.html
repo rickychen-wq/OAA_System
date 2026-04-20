@@ -6,135 +6,66 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <style>
-        :root { --bg: #050505; --panel: #111; --red: #ef4444; --red-glow: rgba(239, 68, 68, 0.3); }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: monospace; display: flex; justify-content: center; padding: 20px; }
+        body { background: #050505; color: #fff; font-family: monospace; padding: 20px; }
         .hidden { display: none !important; }
-        .auth-box { border: 1px solid var(--red); padding: 40px; text-align: center; margin-top: 100px; background: rgba(255,0,0,0.05); }
-        input.sys-in { width: 100%; padding: 12px; background: #000; border: 1px solid var(--red); color: white; margin-bottom: 20px; text-align: center; box-sizing: border-box; }
-        button.sys-btn { width: 100%; padding: 12px; background: var(--red); color: black; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button.sys-btn:hover { box-shadow: 0 0 15px var(--red-glow); background: #fca5a5; }
-        #dashboard { width: 100%; max-width: 1000px; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
-        .panel { background: var(--panel); border: 1px solid #333; padding: 20px; border-radius: 8px; }
-        .panel-title { color: var(--red); font-size: 1.2rem; border-bottom: 1px dashed #333; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { border: 1px solid #333; padding: 12px; text-align: center; vertical-align: middle; }
-        th { background: rgba(239, 68, 68, 0.1); color: var(--red); font-weight: bold; }
-        tr:hover { background: rgba(255,255,255,0.02); }
-        .tier-S { color: #fbbf24; } .tier-A-plus { color: #38bdf8; } .tier-A { color: #3b82f6; } .tier-B { color: #34d399; } .tier-C { color: #f97316; } .tier-D { color: var(--red); } .tier-null { color: #666; }
+        .panel { background: #111; border: 1px solid #333; padding: 25px; border-radius: 8px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #333; padding: 12px; text-align: center; }
+        .t-S { color: #fbbf24; } .t-A { color: #3b82f6; } .t-B { color: #34d399; } .t-C { color: #fb923c; } .t-D { color: #f87171; } .t-N { color: #555; }
+        button { background: #ef4444; color: black; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
-
-<div id="auth-screen">
-    <div class="auth-box">
-        <h1 style="color: var(--red); margin-top: 0;">OAA_ADMIN_ACCESS</h1>
-        <input type="password" id="admin-pw" class="sys-in" placeholder="ENTER ACCESS CODE">
-        <button class="sys-btn" onclick="verifyAdmin()">VERIFY</button>
-        <p id="msg" style="color: var(--red); margin-top: 15px;"></p>
+    <div id="auth" style="text-align:center; margin-top:100px;">
+        <input type="password" id="pw" style="padding:10px; text-align:center;"><br><br>
+        <button onclick="login()">ACCESS SYSTEM</button>
     </div>
-</div>
-
-<div id="dashboard" class="hidden">
-    <div class="panel">
-        <div class="panel-title">> MISSION DISPATCHER</div>
-        <label style="color: #888; font-size: 0.9rem;">TARGET SUBJECT</label>
-        <select id="sub" class="sys-in" style="text-align: left;">
-            <option>國文</option><option>英文</option><option>數學</option><option>物理</option><option>地科</option><option>公民</option><option>歷史</option>
-        </select>
-        <label style="color: #888; font-size: 0.9rem;">MISSION TITLE</label>
-        <input type="text" id="title" class="sys-in" style="text-align: left;" placeholder="例如: 模擬考">
-        <button class="sys-btn" onclick="dispatch()">> DISPATCH</button>
-        <div id="dispatch-msg" style="text-align: center; margin-top: 15px; color: #34d399; font-weight: bold;"></div>
-    </div>
-
-    <div class="panel">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <div class="panel-title" style="margin: 0; border: none;">> STUDENT ROSTER (天梯榜)</div>
-            <button onclick="fetchData()" style="background: transparent; border: 1px solid var(--red); color: var(--red); padding: 5px 15px; cursor: pointer;">REFRESH</button>
+    <div id="dash" class="hidden" style="display:grid; grid-template-columns: 320px 1fr; gap:20px;">
+        <div class="panel">
+            <h3>MISSION DISPATCH</h3>
+            <select id="sub" style="width:100%; padding:10px; margin-bottom:10px;"><option>國文</option><option>英文</option><option>數學</option><option>物理</option><option>地科</option><option>公民</option><option>歷史</option></select>
+            <input type="text" id="title" placeholder="任務名稱" style="width:100%; padding:10px; margin-bottom:10px; background:#000; color:#fff; border:1px solid #333;">
+            <button onclick="send()" style="width:100%;">發布任務</button>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 15%;">RANK</th>
-                    <th style="width: 40%;">ID / NAME</th>
-                    <th style="width: 25%;">AVG SCORE</th>
-                    <th style="width: 20%;">EVALUATION</th>
-                </tr>
-            </thead>
-            <tbody id="tbody">
-                <tr><td colspan="4" style="color: #666;">載入中...</td></tr>
-            </tbody>
-        </table>
+        <div class="panel">
+            <h3>STUDENT天梯榜</h3>
+            <table><thead><tr><th>RANK</th><th>NAME</th><th>AVG SCORE</th><th>OVERALL</th></tr></thead><tbody id="list"></tbody></table>
+        </div>
     </div>
-</div>
 
-<script>
-    const firebaseConfig = { apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A", authDomain: "oaa-system-338b3.firebaseapp.com", projectId: "oaa-system-338b3", storageBucket: "oaa-system-338b3.firebasestorage.app", messagingSenderId: "245860425104", appId: "1:245860425104:web:9b224f32dd70763bda2715" };
-    firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
-    const SUBJECTS = ["國文","英文","數學","物理","地科","公民","歷史"];
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A", authDomain: "oaa-system-338b3.firebaseapp.com", projectId: "oaa-system-338b3", storageBucket: "oaa-system-338b3.firebasestorage.app", messagingSenderId: "245860425104", appId: "1:245860425104:web:9b224f32dd70763bda2715" };
+        firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
 
-    function verifyAdmin() {
-        if(document.getElementById('admin-pw').value === 'Ricky_0414') {
-            document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('dashboard').classList.remove('hidden'); fetchData();
-        } else { document.getElementById('msg').innerText = "ACCESS DENIED"; }
-    }
+        function getTier(avg) {
+            if (avg === null || avg === undefined) return { t: '未定', c: 't-N' };
+            if (avg >= 95) return { t: 'S', c: 't-S' };
+            if (avg >= 85) return { t: 'A+', c: 't-A' };
+            if (avg >= 80) return { t: 'A', c: 't-A' };
+            if (avg >= 70) return { t: 'B', c: 't-B' };
+            if (avg >= 60) return { t: 'C', c: 't-C' };
+            return { t: 'D', c: 't-D' };
+        }
 
-    async function dispatch() {
-        const title = document.getElementById('title').value.trim(), sub = document.getElementById('sub').value;
-        if(!title) return;
-        await db.collection("missions").add({ title: title, subject: sub, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-        document.getElementById('dispatch-msg').innerText = "MISSION UPLOADED!";
-        document.getElementById('title').value = ""; setTimeout(() => document.getElementById('dispatch-msg').innerText="", 3000);
-    }
+        function login() { if(document.getElementById('pw').value === 'Ricky_0414') { document.getElementById('auth').style.display='none'; document.getElementById('dash').style.display='grid'; refresh(); } }
+        async function send() { const t = document.getElementById('title').value; if(!t) return; await db.collection("missions").add({ title: t, subject: document.getElementById('sub').value, timestamp: firebase.firestore.FieldValue.serverTimestamp() }); alert("任務已發出！"); }
 
-    function calcPts(score) {
-        if(score === null) return 0;
-        if(score>=95) return 8; if(score>=85) return 6; if(score>=80) return 4;
-        if(score>=70) return 3; if(score>=60) return 2; return 1;
-    }
-    function calcOverall(avgPts) {
-        if(avgPts === 0) return {t:'未定', c:'tier-null'};
-        if(avgPts>=8) return {t:'S', c:'tier-S'}; if(avgPts>=6) return {t:'A+', c:'tier-A-plus'};
-        if(avgPts>=4) return {t:'A', c:'tier-A'}; if(avgPts>=3) return {t:'B', c:'tier-B'};
-        if(avgPts>=2) return {t:'C', c:'tier-C'}; return {t:'D', c:'tier-D'};
-    }
-
-    async function fetchData() {
-        const snap = await db.collection("users").get();
-        let users = [];
-        snap.forEach(doc => {
-            let data = doc.data(); let totalPts = 0, validSubs = 0, overallScoreSum = 0;
-            const hist = data.history || [];
-            SUBJECTS.forEach(sub => {
-                const subHist = hist.filter(h => h.subject === sub);
-                let avgSc = null;
-                if(subHist.length > 0) {
-                    avgSc = subHist.reduce((a,b)=>a+b.score,0) / subHist.length;
-                    validSubs++; overallScoreSum += avgSc;
-                }
-                totalPts += calcPts(avgSc);
+        async function refresh() {
+            db.collection("users").onSnapshot(snap => {
+                let users = [];
+                snap.forEach(doc => {
+                    const d = doc.data(); let sum = 0, c = 0;
+                    (d.history || []).forEach(h => { sum += h.score; c++; });
+                    d.avg = c > 0 ? sum / c : null; users.push(d);
+                });
+                users.sort((a,b) => (b.avg || 0) - (a.avg || 0));
+                const list = document.getElementById('list'); list.innerHTML = "";
+                users.forEach((u, i) => {
+                    const t = getTier(u.avg);
+                    list.innerHTML += `<tr><td>#${i+1}</td><td>${u.username}<br><small>${u.loginId}</small></td><td>${u.avg ? u.avg.toFixed(1) : '未定'}</td><td class="${t.c}">${t.t}</td></tr>`;
+                });
             });
-            data.displayAvg = validSubs === 0 ? "未定" : (overallScoreSum / validSubs).toFixed(1);
-            data.avgPts = totalPts / 7;
-            users.push(data);
-        });
-        users.sort((a,b) => b.avgPts - a.avgPts); 
-        
-        const tbody = document.getElementById('tbody'); tbody.innerHTML = "";
-        if(users.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="color: #666;">無資料</td></tr>`; return; }
-        
-        users.forEach((u, index) => {
-            const ev = calcOverall(u.avgPts);
-            tbody.innerHTML += `
-                <tr>
-                    <td style="font-weight:bold; font-size:1.2rem; color:#888;">#${index + 1}</td>
-                    <td><div style="font-weight:bold; color:white;">${u.username}</div><div style="font-size:0.8rem; color:#666;">${u.loginId}</div></td>
-                    <td>${u.displayAvg}</td>
-                    <td class="${ev.c}" style="font-weight:bold; font-size:1.2rem;">${ev.t}</td>
-                </tr>`;
-        });
-    }
-</script>
+        }
+    </script>
 </body>
 </html>
