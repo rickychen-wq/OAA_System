@@ -3,262 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OAA COMMAND CENTER | 高度育成指揮部</title>
-    
+    <title>OAA COMMAND CENTER | 指揮部最高權限</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
-
     <style>
-        :root {
-            --bg: #050505;
-            --panel: #111;
-            --red: #ff0000;
-            --red-dim: #880000;
-            --glow: 0 0 15px rgba(255, 0, 0, 0.3);
-        }
-
-        body {
-            margin: 0; background-color: var(--bg); color: #fff;
-            font-family: 'Share Tech Mono', monospace; height: 100vh; overflow: hidden;
-            background-image: linear-gradient(rgba(255, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 0, 0.05) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-
+        :root { --bg: #050505; --panel: #111; --red: #ff0000; --red-dim: #880000; --blue: #3b82f6; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Share Tech Mono', monospace; overflow: hidden; background-image: linear-gradient(rgba(255, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 0, 0.05) 1px, transparent 1px); background-size: 40px 40px; }
         .hidden { display: none !important; }
-
-        /* 門禁畫面 */
-        #auth-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center;
-        }
-        .auth-box { border: 1px solid var(--red); padding: 50px; text-align: center; background: rgba(20,0,0,0.8); box-shadow: var(--glow); }
-        .auth-box h1 { font-size: 2rem; letter-spacing: 5px; margin-bottom: 30px; color: var(--red); text-shadow: 0 0 10px red; }
         
-        input.sys-in {
-            background: #000; border: 1px solid var(--red-dim); color: #fff;
-            padding: 15px; width: 100%; box-sizing: border-box; text-align: center;
-            font-family: inherit; font-size: 1.2rem; letter-spacing: 3px; margin-bottom: 20px;
-        }
-        input:focus { outline: none; border-color: var(--red); }
-
+        /* 門禁 */
+        #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .auth-box { border: 1px solid var(--red); padding: 50px; text-align: center; background: rgba(20,0,0,0.9); box-shadow: 0 0 20px red; }
+        
         /* 主佈局 */
         #dashboard { display: grid; grid-template-columns: 350px 1fr; height: 100vh; }
+        aside { background: var(--panel); border-right: 1px solid #333; padding: 25px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+        main { padding: 30px; overflow-y: auto; }
 
-        /* 左側：發布任務區 */
-        aside {
-            background: var(--panel); border-right: 1px solid #333; padding: 30px;
-            display: flex; flex-direction: column; gap: 20px;
-        }
-        .section-title { color: var(--red); font-size: 1.2rem; border-bottom: 1px solid var(--red-dim); padding-bottom: 10px; margin-bottom: 10px; font-weight: bold; }
-        label { color: var(--red-dim); font-size: 0.8rem; letter-spacing: 1px; }
+        /* 元件樣式 */
+        .section-title { color: var(--red); font-weight: bold; border-bottom: 1px solid var(--red-dim); padding-bottom: 5px; margin-bottom: 10px; }
+        select, input { background: #000; border: 1px solid #444; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; font-family: inherit; }
+        button { cursor: pointer; font-family: inherit; transition: 0.2s; }
+        .cyber-btn { background: var(--red); color: #000; border: none; padding: 15px; font-weight: bold; width: 100%; }
+        .cyber-btn:hover { background: #fff; box-shadow: 0 0 15px #fff; }
+        .clean-btn { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 10px; font-size: 0.8rem; }
+        .clean-btn:hover { background: var(--red); color: #000; }
+
+        /* 表格與名單 */
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #222; padding: 12px; text-align: center; }
+        .user-row { cursor: pointer; transition: 0.2s; }
+        .user-row:hover { background: rgba(255,255,255,0.05); }
+        .detail-area { background: #0a0a0a; border: 1px dashed #444; padding: 15px; text-align: left; }
         
-        select, input[type="text"] {
-            background: #000; border: 1px solid #444; color: #fff;
-            padding: 12px; width: 100%; box-sizing: border-box; font-family: inherit;
-        }
+        /* 標籤顏色 */
+        .status-tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; }
+        .bg-red { background: var(--red-dim); color: #fff; }
+        .bg-green { background: #065f46; color: #fff; }
+        .score-edit { color: var(--blue); text-decoration: underline; cursor: pointer; }
 
-        button.cyber-btn {
-            background: var(--red); color: #000; border: none; padding: 15px;
-            font-family: inherit; font-weight: bold; cursor: pointer;
-            transition: 0.3s; letter-spacing: 2px;
-        }
-        button.cyber-btn:hover { background: #fff; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
-
-        /* 右側：排行榜區 */
-        main { padding: 40px; overflow-y: auto; }
-        .table-container { background: rgba(255,255,255,0.02); border: 1px solid #333; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { border-bottom: 1px solid #222; padding: 15px; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        th { color: var(--red-dim); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 2px; }
-        
-        /* 評級顏色 */
-        .t-S { color: #fbbf24; font-weight: bold; }
-        .t-A { color: #3b82f6; }
-        .t-B { color: #10b981; }
-        .t-C { color: #f59e0b; }
-        .t-D { color: #ef4444; }
-        .t-N { color: #555; }
-
-        .stat-box { display: flex; gap: 20px; margin-bottom: 30px; }
-        .stat-card { background: #111; border: 1px solid #333; padding: 20px; flex: 1; text-align: center; }
-        .stat-val { font-size: 2.5rem; color: var(--red); font-weight: bold; }
+        /* 統計 */
+        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .stat-card { background: #1a1a1a; padding: 15px; border-left: 3px solid var(--red); }
     </style>
 </head>
 <body>
 
     <div id="auth-overlay">
         <div class="auth-box">
-            <h1>RESTRICTED AREA</h1>
-            <input type="password" id="admin-pw" class="sys-in" placeholder="PASSCODE">
-            <button class="cyber-btn" onclick="verifyLogin()">ENTER COMMAND CENTER</button>
-            <p id="auth-msg" style="color: red; margin-top: 15px; height: 20px;"></p>
+            <h1 style="color:red; letter-spacing:10px;">ROOT LOGIN</h1>
+            <input type="password" id="admin-pw" style="text-align:center; font-size:1.5rem; letter-spacing:5px;" placeholder="****">
+            <button class="cyber-btn" onclick="verifyLogin()" style="margin-top:20px;">ACCESS DATABASE</button>
         </div>
     </div>
 
     <div id="dashboard" class="hidden">
         <aside>
-            <div class="section-title">> MISSION DISPATCH</div>
-            
-            <div>
-                <label>TARGET SUBJECT</label>
-                <select id="sub-select">
-                    <option>國文</option><option>英文</option><option>數學</option>
-                    <option>物理</option><option>地科</option><option>公民</option><option>歷史</option>
-                </select>
-            </div>
+            <div class="section-title">> 新任務指派</div>
+            <select id="sub-select">
+                <option>國文</option><option>英文</option><option>數學</option><option>物理</option><option>地科</option><option>公民</option><option>歷史</option>
+            </select>
+            <input type="text" id="m-title" placeholder="任務標題">
+            <button class="cyber-btn" onclick="sendMission()">發布任務</button>
 
-            <div>
-                <label>MISSION TITLE</label>
-                <input type="text" id="m-title" placeholder="例如: 期末考 A 卷">
-            </div>
-
-            <button class="cyber-btn" onclick="sendMission()">DISPATCH MISSION</button>
-            <div id="dispatch-msg" style="text-align: center; color: #00ff00; font-size: 0.8rem;"></div>
+            <div class="section-title" style="margin-top:30px;">> 系統清理權限</div>
+            <p style="font-size:0.7rem; color:#888;">此操作會將所有學員尚未填寫的任務「強制補 0」並結束任務。</p>
+            <button class="clean-btn" onclick="cleanUnfinished()">一鍵清理未填任務 (強制 0 分)</button>
+            <div id="log-msg" style="color:var(--blue); font-size:0.7rem;"></div>
         </aside>
 
         <main>
-            <div class="stat-box">
-                <div class="stat-card">
-                    <label>TOTAL STUDENTS</label>
-                    <div id="count-users" class="stat-val">0</div>
-                </div>
-                <div class="stat-card">
-                    <label>ACTIVE MISSIONS</label>
-                    <div id="count-missions" class="stat-val">0</div>
-                </div>
+            <div class="stat-grid">
+                <div class="stat-card"><div>學員總數</div><div id="stat-u" style="font-size:1.5rem; color:red;">0</div></div>
+                <div class="stat-card"><div>當前活動任務</div><div id="stat-m" style="font-size:1.5rem; color:red;">0</div></div>
             </div>
 
-            <div class="section-title">> STUDENT ROSTER (天梯排行榜)</div>
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 10%;">RANK</th>
-                            <th style="width: 40%;">ID / NAME</th>
-                            <th style="width: 25%;">AVG SCORE</th>
-                            <th style="width: 25%;">EVALUATION</th>
-                        </tr>
-                    </thead>
-                    <tbody id="roster-list">
-                        <tr><td colspan="4" style="color: #444;">WAITING FOR DATA...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <div class="section-title">> 全校學員即時監控 (點擊查看詳情/修改分數)</div>
+            <table id="roster-table">
+                <thead>
+                    <tr>
+                        <th style="width:10%;">RANK</th>
+                        <th style="width:30%;">學員名稱</th>
+                        <th style="width:15%;">當前平均</th>
+                        <th style="width:15%;">總評級</th>
+                        <th style="width:30%;">待處理任務</th>
+                    </tr>
+                </thead>
+                <tbody id="roster-list"></tbody>
+            </table>
         </main>
     </div>
 
 <script>
-    // Firebase 配置
-    const firebaseConfig = {
-        apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A",
-        authDomain: "oaa-system-338b3.firebaseapp.com",
-        projectId: "oaa-system-338b3",
-        storageBucket: "oaa-system-338b3.firebasestorage.app",
-        messagingSenderId: "245860425104",
-        appId: "1:245860425104:web:9b224f32dd70763bda2715"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    const firebaseConfig = { apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A", authDomain: "oaa-system-338b3.firebaseapp.com", projectId: "oaa-system-338b3", storageBucket: "oaa-system-338b3.firebasestorage.app", messagingSenderId: "245860425104", appId: "1:245860425104:web:9b224f32dd70763bda2715" };
+    firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
 
-    // 評級邏輯 (同步前台)
+    let allMissions = [];
+    const SUBJECTS = ["國文","英文","數學","物理","地科","公民","歷史"];
+
     function getTier(avg) {
-        if (avg === null || avg === undefined) return { t: '未定', c: 't-N' };
-        if (avg >= 95) return { t: 'S', c: 't-S' };
-        if (avg >= 85) return { t: 'A+', c: 't-A' };
-        if (avg >= 80) return { t: 'A', c: 't-A' };
-        if (avg >= 70) return { t: 'B', c: 't-B' };
-        if (avg >= 60) return { t: 'C', c: 't-C' };
-        return { t: 'D', c: 't-D' };
+        if (avg === null) return { t: '--', c: '#444' };
+        if (avg >= 95) return { t: 'S', c: '#fbbf24' };
+        if (avg >= 85) return { t: 'A+', c: '#3b82f6' };
+        if (avg >= 80) return { t: 'A', c: '#3b82f6' };
+        if (avg >= 70) return { t: 'B', c: '#10b981' };
+        if (avg >= 60) return { t: 'C', c: '#f59e0b' };
+        return { t: 'D', c: '#ef4444' };
     }
 
-    // 登入驗證
     function verifyLogin() {
-        const pw = document.getElementById('admin-pw').value;
-        if(pw === 'Ricky_0414') {
+        if(document.getElementById('admin-pw').value === 'Ricky_0414') {
             document.getElementById('auth-overlay').classList.add('hidden');
             document.getElementById('dashboard').classList.remove('hidden');
-            startSync(); // 啟動自動同步
-        } else {
-            document.getElementById('auth-msg').innerText = "ACCESS DENIED.";
-        }
+            startSync();
+        } else alert("ACCESS DENIED.");
     }
 
-    // 發布任務
     async function sendMission() {
-        const title = document.getElementById('m-title').value.trim();
-        const subject = document.getElementById('sub-select').value;
-        const msg = document.getElementById('dispatch-msg');
-        
-        if(!title) return;
-        
-        try {
-            await db.collection("missions").add({
-                title: title,
-                subject: subject,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            msg.innerText = "MISSION DISPATCHED SUCCESSFULLY.";
-            document.getElementById('m-title').value = "";
-            setTimeout(() => msg.innerText = "", 3000);
-        } catch(e) {
-            alert("Error sending mission.");
-        }
+        const t = document.getElementById('m-title').value.trim();
+        if(!t) return;
+        await db.collection("missions").add({ title: t, subject: document.getElementById('sub-select').value, timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+        document.getElementById('m-title').value = "";
     }
 
-    // 核心功能：即時同步數據
+    // --- 核心功能 1：一鍵清理未填寫任務 ---
+    async function cleanUnfinished() {
+        if(!confirm("警告：這將強制結束所有學員未填寫的任務，並以 0 分計入。確定執行？")) return;
+        const msg = document.getElementById('log-msg');
+        msg.innerText = "正在執行強制清算...";
+        
+        const uSnap = await db.collection("users").get();
+        const batch = db.batch();
+        let count = 0;
+
+        uSnap.forEach(uDoc => {
+            const userData = uDoc.data();
+            const completed = userData.completedMissions || [];
+            allMissions.forEach(m => {
+                if(!completed.includes(m.id)) {
+                    const penalty = { mid: m.id, subject: m.subject, score: 0, timestamp: Date.now(), type: 'CLEANED' };
+                    batch.update(db.collection("users").doc(uDoc.id), {
+                        history: firebase.firestore.FieldValue.arrayUnion(penalty),
+                        completedMissions: firebase.firestore.FieldValue.arrayUnion(m.id)
+                    });
+                    count++;
+                }
+            });
+        });
+        await batch.commit();
+        msg.innerText = `清算完成：共處理 ${count} 個過期任務。`;
+    }
+
+    // --- 核心功能 2：手動修改學員分數 ---
+    async function editScore(userId, historyIndex, oldScore) {
+        const newScore = prompt(`請輸入新的分數 (目前為 ${oldScore} 分):`, oldScore);
+        if(newScore === null || newScore === "" || isNaN(newScore)) return;
+        
+        const uRef = db.collection("users").doc(userId);
+        const doc = await uRef.get();
+        let history = doc.data().history;
+        history[historyIndex].score = parseInt(newScore);
+        await uRef.update({ history: history });
+    }
+
     function startSync() {
-        // 監聽任務數
-        db.collection("missions").onSnapshot(snap => {
-            document.getElementById('count-missions').innerText = snap.size;
+        // 監聽任務
+        db.collection("missions").onSnapshot(mSnap => {
+            allMissions = mSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            document.getElementById('stat-m').innerText = allMissions.length;
         });
 
-        // 監聽並刷新學生天梯
-        db.collection("users").onSnapshot(snap => {
-            document.getElementById('count-users').innerText = snap.size;
-            let list = [];
-            
-            snap.forEach(doc => {
-                const d = doc.data();
-                let sum = 0, count = 0;
-                // 依照歷史紀錄計算最新平均分
-                if(d.history && d.history.length > 0) {
-                    // 對每一科先算平均，再算總平均 (跟前台一致)
-                    const subjects = ["國文","英文","數學","物理","地科","公民","歷史"];
-                    let validSubs = 0, overallSum = 0;
-                    subjects.forEach(sub => {
-                        const h = d.history.filter(x => x.subject === sub);
-                        if(h.length > 0) {
-                            overallSum += (h.reduce((a,b)=>a+b.score,0)/h.length);
-                            validSubs++;
-                        }
-                    });
-                    d.finalAvg = validSubs > 0 ? overallSum / validSubs : null;
-                } else {
-                    d.finalAvg = null;
-                }
-                list.push(d);
+        // 監聽並渲染學員
+        db.collection("users").onSnapshot(uSnap => {
+            document.getElementById('stat-u').innerText = uSnap.size;
+            let users = [];
+            uSnap.forEach(d => {
+                const data = d.data();
+                let sum = 0, c = 0;
+                SUBJECTS.forEach(s => {
+                    const h = (data.history || []).filter(x => x.subject === s);
+                    if(h.length) { sum += (h.reduce((a,b)=>a+b.score,0)/h.length); c++; }
+                });
+                data.id = d.id;
+                data.avg = c > 0 ? sum / c : null;
+                users.push(data);
             });
-
-            // 依照分數排行
-            list.sort((a,b) => (b.finalAvg || 0) - (a.finalAvg || 0));
-
-            const roster = document.getElementById('roster-list');
-            roster.innerHTML = "";
             
-            list.forEach((u, i) => {
-                const tier = getTier(u.finalAvg);
-                roster.innerHTML += `
-                    <tr>
-                        <td style="color: #666; font-weight:bold;">#${i+1}</td>
-                        <td>
-                            <div style="font-weight:bold; color:#fff;">${u.username}</div>
-                            <div style="font-size:0.7rem; color:#444;">${u.loginId}</div>
-                        </td>
-                        <td style="color: #aaa;">${u.finalAvg ? u.finalAvg.toFixed(1) : '---'}</td>
-                        <td class="${tier.c}" style="font-weight:bold;">${tier.t}</td>
-                    </tr>
+            users.sort((a,b) => (b.avg || 0) - (a.avg || 0));
+            const list = document.getElementById('roster-list');
+            list.innerHTML = "";
+
+            users.forEach((u, index) => {
+                const tier = getTier(u.avg);
+                const unfinished = allMissions.filter(m => !(u.completedMissions || []).includes(m.id));
+                const unfStr = unfinished.length > 0 ? `<span class="status-tag bg-red">${unfinished.length} 個未交</span>` : `<span class="status-tag bg-green">全清</span>`;
+
+                // 組合行
+                const tr = document.createElement('tr');
+                tr.className = 'user-row';
+                tr.innerHTML = `
+                    <td>#${index+1}</td>
+                    <td><b>${u.username}</b><br><small style="color:#666;">${u.loginId}</small></td>
+                    <td>${u.avg ? u.avg.toFixed(1) : '---'}</td>
+                    <td style="color:${tier.c}; font-weight:bold;">${tier.t}</td>
+                    <td>${unfStr}</td>
                 `;
+
+                // 點擊展開詳細紀錄
+                tr.onclick = () => {
+                    const existingDetail = document.getElementById('det-' + u.id);
+                    if(existingDetail) { existingDetail.remove(); return; }
+                    
+                    const detailTr = document.createElement('tr');
+                    detailTr.id = 'det-' + u.id;
+                    let histHtml = (u.history || []).map((h, i) => `
+                        <div style="margin-bottom:5px;">
+                            [${h.subject}] ${h.score}分 - 
+                            <span class="score-edit" onclick="editScore('${u.id}', ${i}, ${h.score})">修改分數</span>
+                        </div>
+                    `).join('');
+                    
+                    let unfHtml = unfinished.map(m => `<div>❌ 未交：${m.title} (${m.subject})</div>`).join('');
+
+                    detailTr.innerHTML = `
+                        <td colspan="5" class="detail-area">
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                                <div><b style="color:var(--blue);">成績歷史 (可修改):</b><br>${histHtml || '尚無紀錄'}</div>
+                                <div><b style="color:var(--red);">未完成細項:</b><br>${unfHtml || '全部交齊了'}</div>
+                            </div>
+                        </td>
+                    `;
+                    tr.parentNode.insertBefore(detailTr, tr.nextSibling);
+                };
+                list.appendChild(tr);
             });
         });
     }
