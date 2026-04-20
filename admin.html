@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>OAA Admin | Command Center</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f1f5f9; padding: 40px; }
+        .box { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        input, select, button { width: 100%; padding: 12px; margin-top: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { background: #1e293b; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="box" id="auth-box">
+    <h2>管理員登入</h2>
+    <input type="password" id="pw" placeholder="ENTER ACCESS CODE">
+    <button onclick="verify()">驗證進入</button>
+</div>
+<div class="box hidden" id="admin-box">
+    <h2 style="color: #1e293b;">[ 任務發布中心 ]</h2>
+    <select id="sub">
+        <option>國文</option><option>英文</option><option>數學</option>
+        <option>物理</option><option>地科</option><option>公民</option><option>歷史</option>
+    </select>
+    <input type="text" id="title" placeholder="任務名稱 (如: L3 小考)">
+    <button onclick="dispatch()">發布任務 (DISPATCH)</button>
+    <div id="msg" style="margin-top:10px; color: green;"></div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCR7mJ39_Chf_x-iNFAPtcLv_p36ywdY7A",
+        authDomain: "oaa-system-338b3.firebaseapp.com",
+        projectId: "oaa-system-338b3",
+        storageBucket: "oaa-system-338b3.firebasestorage.app",
+        messagingSenderId: "245860425104",
+        appId: "1:245860425104:web:9b224f32dd70763bda2715"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function verify() {
+        if(document.getElementById('pw').value === "Ricky_0414") {
+            document.getElementById('auth-box').classList.add('hidden');
+            document.getElementById('admin-box').classList.remove('hidden');
+        } else { alert("密碼錯誤"); }
+    }
+
+    async function dispatch() {
+        const title = document.getElementById('title').value;
+        const subject = document.getElementById('sub').value;
+        if(!title) return;
+        await db.collection("missions").add({
+            title: title, subject: subject,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById('msg').innerText = "任務已廣播！";
+        document.getElementById('title').value = "";
+    }
+</script>
+</body>
+</html>
