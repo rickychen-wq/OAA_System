@@ -9,32 +9,52 @@
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #050505; --panel: #111; --red: #ff0000; --red-dim: #880000; --blue: #3b82f6; --green: #10b981; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Share Tech Mono', monospace; overflow: hidden; background-image: linear-gradient(rgba(255, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 0, 0.05) 1px, transparent 1px); background-size: 40px 40px; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Share Tech Mono', monospace; height: 100vh; overflow-x: hidden; background-image: linear-gradient(rgba(255, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 0, 0, 0.05) 1px, transparent 1px); background-size: 40px 40px; }
         .hidden { display: none !important; }
+        
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        .auth-box { border: 1px solid var(--red); padding: 50px; text-align: center; background: rgba(20,0,0,0.9); box-shadow: 0 0 30px rgba(255,0,0,0.5); }
+        .auth-box { border: 1px solid var(--red); padding: 40px; text-align: center; background: rgba(20,0,0,0.9); box-shadow: 0 0 30px rgba(255,0,0,0.5); width: 80%; max-width: 350px; }
+        
+        /* 手機版相容佈局 */
         #dashboard { display: grid; grid-template-columns: 350px 1fr; height: 100vh; }
+        @media (max-width: 850px) {
+            #dashboard { grid-template-columns: 1fr; height: auto; overflow-y: auto; }
+            body { overflow-y: auto; }
+            aside { border-right: none; border-bottom: 2px solid var(--red); }
+        }
+
         aside { background: var(--panel); border-right: 1px solid #333; padding: 25px; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
-        main { padding: 30px; overflow-y: auto; }
-        .section-title { color: var(--red); font-weight: bold; border-bottom: 1px solid var(--red-dim); padding-bottom: 5px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
-        select, input { background: #000; border: 1px solid #444; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; font-family: inherit; }
-        .cyber-btn { background: var(--red); color: #000; border: none; padding: 15px; font-weight: bold; width: 100%; cursor: pointer; transition: 0.2s; }
+        main { padding: 20px; overflow-y: auto; }
+        
+        .section-title { color: var(--red); font-weight: bold; border-bottom: 1px solid var(--red-dim); padding-bottom: 5px; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 2px; }
+        select, input { background: #000; border: 1px solid #444; color: #fff; padding: 12px; width: 100%; box-sizing: border-box; font-family: inherit; font-size: 1rem; }
+        
+        .cyber-btn { background: var(--red); color: #000; border: none; padding: 15px; font-weight: bold; width: 100%; cursor: pointer; transition: 0.2s; font-size: 1rem; }
         .cyber-btn:hover { background: #fff; box-shadow: 0 0 15px #fff; }
         
-        /* 清理按鈕組 */
-        .clean-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
-        .btn-exe { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 10px; font-size: 0.75rem; cursor: pointer; }
+        /* 任務管理區 */
+        #mission-manager { max-height: 200px; overflow-y: auto; border: 1px solid #333; padding: 5px; background: #0a0a0a; }
+        .m-item { background: #111; border: 1px solid #222; padding: 10px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .del-btn { background: #333; color: #f87171; border: none; padding: 5px 10px; cursor: pointer; font-size: 0.8rem; }
+        .del-btn:hover { background: #f87171; color: #000; }
+
+        /* 清理按鈕 */
+        .clean-group { display: flex; flex-direction: column; gap: 10px; }
+        .btn-exe { background: transparent; color: var(--red); border: 1px solid var(--red); padding: 12px; font-size: 0.85rem; cursor: pointer; }
         .btn-exe:hover { background: var(--red); color: #000; }
-        .btn-pardon { background: transparent; color: #aaa; border: 1px solid #555; padding: 10px; font-size: 0.75rem; cursor: pointer; }
+        .btn-pardon { background: transparent; color: #aaa; border: 1px solid #555; padding: 12px; font-size: 0.85rem; cursor: pointer; }
         .btn-pardon:hover { background: #fff; color: #000; border-color: #fff; }
 
-        table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #222; padding: 12px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.9rem; }
+        th, td { border: 1px solid #222; padding: 12px; text-align: center; word-wrap: break-word; }
         th { background: rgba(255,0,0,0.1); color: var(--red-dim); }
-        .user-row { cursor: pointer; }
+        @media (max-width: 600px) { th, td { padding: 8px 4px; font-size: 0.8rem; } }
+
+        .user-row { cursor: pointer; transition: 0.2s; }
         .user-row:hover { background: rgba(255,255,255,0.05); }
-        .detail-area { background: #0a0a0a; border: 1px dashed #444; padding: 15px; text-align: left; }
-        .status-tag { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; }
+        .detail-area { background: #0a0a0a; border: 1px dashed #444; padding: 15px; text-align: left; font-size: 0.85rem; }
+        
+        .status-tag { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; white-space: nowrap; }
         .bg-red { background: var(--red-dim); color: #fff; }
         .bg-green { background: #065f46; color: #fff; }
         .score-edit { color: var(--blue); text-decoration: underline; cursor: pointer; margin-left: 10px; }
@@ -44,9 +64,9 @@
 
     <div id="auth-overlay">
         <div class="auth-box">
-            <h1 style="color:red; letter-spacing:10px;">ADMIN_ACCESS</h1>
-            <input type="password" id="admin-pw" style="text-align:center; font-size:1.5rem;" placeholder="PASSWORD">
-            <button class="cyber-btn" onclick="verifyLogin()" style="margin-top:20px;">INITIALIZE LOGIN</button>
+            <h1 style="color:red; letter-spacing:5px; margin-top:0;">ADMIN_LOGIN</h1>
+            <input type="password" id="admin-pw" style="text-align:center; font-size:1.2rem; margin-bottom:20px;" placeholder="PASSWORD">
+            <button class="cyber-btn" onclick="verifyLogin()">INITIALIZE</button>
         </div>
     </div>
 
@@ -59,27 +79,26 @@
             <input type="text" id="m-title" placeholder="ENTER MISSION TITLE">
             <button class="cyber-btn" onclick="sendMission()">發布任務</button>
 
-            <div class="section-title" style="margin-top:30px;">> SYSTEM_MAINTENANCE</div>
+            <div class="section-title" style="margin-top:20px;">> ARCHIVE_MANAGER</div>
+            <div id="mission-manager"></div>
+
+            <div class="section-title" style="margin-top:20px;">> SYSTEM_MAINTENANCE</div>
             <div class="clean-group">
-                <div style="font-size:0.7rem; color:#888;">[ 處決模式 ]：未填者補 0 分並關閉</div>
-                <button class="btn-exe" onclick="cleanUnfinished(true)">TERMINATE: FORCE 0 PTS</button>
-                
-                <div style="font-size:0.7rem; color:#888; margin-top:10px;">[ 赦免模式 ]：直接清掉任務，不扣分</div>
-                <button class="btn-pardon" onclick="cleanUnfinished(false)">PARDON: IGNORE UNFINISHED</button>
+                <button class="btn-exe" onclick="cleanUnfinished(true)">[處決] 未填者補 0 分並關閉</button>
+                <button class="btn-pardon" onclick="cleanUnfinished(false)">[赦免] 清除任務，不計分</button>
             </div>
-            <div id="log-msg" style="color:var(--blue); font-size:0.7rem; margin-top:10px;"></div>
+            <div id="log-msg" style="color:var(--blue); font-size:0.8rem; margin-top:5px; text-align:center;"></div>
         </aside>
 
         <main>
-            <div class="section-title">> OAA REAL-TIME MONITORING (點擊學員查看細節)</div>
-            <table id="roster-table">
+            <div class="section-title" style="font-size:1.5rem; margin-bottom:15px;">> OAA ROSTER (即時監控)</div>
+            <table>
                 <thead>
                     <tr>
-                        <th style="width:10%;">RANK</th>
-                        <th style="width:35%;">STUDENT / ID</th>
-                        <th style="width:15%;">AVG</th>
-                        <th style="width:15%;">TIER</th>
-                        <th style="width:25%;">STATUS</th>
+                        <th style="width:15%;">RANK</th>
+                        <th style="width:35%;">STUDENT</th>
+                        <th style="width:20%;">AVG</th>
+                        <th style="width:30%;">STATUS</th>
                     </tr>
                 </thead>
                 <tbody id="roster-list"></tbody>
@@ -119,10 +138,16 @@
         document.getElementById('m-title').value = "";
     }
 
-    // --- 關鍵：雙模式清理功能 ---
+    // 管理員刪除任務
+    async function deleteMission(id) {
+        if(!confirm("確定要徹底刪除此任務嗎？")) return;
+        await db.collection("missions").doc(id).delete();
+    }
+
+    // 雙模式清理
     async function cleanUnfinished(isPunish) {
-        const modeText = isPunish ? "【處決模式：補 0 分】" : "【赦免模式：不計分】";
-        if(!confirm(`確定要執行 ${modeText} 嗎？`)) return;
+        const modeText = isPunish ? "【處決模式】" : "【赦免模式】";
+        if(!confirm(`即將執行 ${modeText}，確定嗎？`)) return;
         
         const msg = document.getElementById('log-msg');
         msg.innerText = "Processing...";
@@ -134,33 +159,34 @@
         uSnap.forEach(uDoc => {
             const userData = uDoc.data();
             const completed = userData.completedMissions || [];
+            
             allMissions.forEach(m => {
+                // 如果任務在入學前發布，不處分該學生
+                const mTime = m.timestamp ? m.timestamp.toMillis() : Date.now();
+                if(userData.createdAt && mTime < userData.createdAt) return;
+
                 if(!completed.includes(m.id)) {
                     const userRef = db.collection("users").doc(uDoc.id);
                     if(isPunish) {
-                        // 處決：補一筆 0 分進歷史紀錄
                         const penalty = { mid: m.id, subject: m.subject, score: 0, timestamp: Date.now(), type: 'FORCE_ZERO' };
-                        batch.update(userRef, {
-                            history: firebase.firestore.FieldValue.arrayUnion(penalty),
-                            completedMissions: firebase.firestore.FieldValue.arrayUnion(m.id)
-                        });
+                        batch.update(userRef, { history: firebase.firestore.FieldValue.arrayUnion(penalty), completedMissions: firebase.firestore.FieldValue.arrayUnion(m.id) });
                     } else {
-                        // 赦免：只把任務標記為已完成，但不增加任何成績紀錄
-                        batch.update(userRef, {
-                            completedMissions: firebase.firestore.FieldValue.arrayUnion(m.id)
-                        });
+                        batch.update(userRef, { completedMissions: firebase.firestore.FieldValue.arrayUnion(m.id) });
                     }
                     count++;
                 }
             });
         });
         await batch.commit();
-        msg.innerText = `Operation Complete. ${count} tasks processed.`;
+        msg.innerText = `Operation Complete. (${count} processed)`;
+        setTimeout(() => msg.innerText = "", 5000);
     }
 
+    // 管理員改分
     async function editScore(userId, historyIndex, oldScore) {
-        const newScore = prompt(`修改分數:`, oldScore);
-        if(newScore === null || isNaN(newScore)) return;
+        const newScore = prompt(`請輸入修改後的分數 (目前: ${oldScore}):`, oldScore);
+        if(newScore === null || newScore === "" || isNaN(newScore)) return;
+        
         const uRef = db.collection("users").doc(userId);
         const doc = await uRef.get();
         let history = doc.data().history;
@@ -169,10 +195,20 @@
     }
 
     function startSync() {
-        db.collection("missions").onSnapshot(mSnap => {
+        // 監聽任務並生成管理面板
+        db.collection("missions").orderBy("timestamp", "desc").onSnapshot(mSnap => {
             allMissions = mSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const mgr = document.getElementById('mission-manager');
+            if(allMissions.length === 0) { mgr.innerHTML = '<div style="padding:10px; color:#666; text-align:center;">No Active Missions</div>'; return; }
+            mgr.innerHTML = allMissions.map(m => `
+                <div class="m-item">
+                    <div style="font-size:0.8rem; line-height:1.2;"><b>${m.title}</b><br><span style="color:#888;">${m.subject}</span></div>
+                    <button class="del-btn" onclick="deleteMission('${m.id}')">刪除</button>
+                </div>
+            `).join('');
         });
 
+        // 監聽並渲染學員
         db.collection("users").onSnapshot(uSnap => {
             let users = [];
             uSnap.forEach(d => {
@@ -182,7 +218,8 @@
                     const h = (data.history || []).filter(x => x.subject === s);
                     if(h.length) { sum += (h.reduce((a,b)=>a+b.score,0)/h.length); c++; }
                 });
-                data.id = d.id; data.avg = c > 0 ? sum / c : null;
+                data.id = d.id;
+                data.avg = c > 0 ? sum / c : null;
                 users.push(data);
             });
             
@@ -192,21 +229,49 @@
 
             users.forEach((u, index) => {
                 const tier = getTier(u.avg);
-                const unfinished = allMissions.filter(m => !(u.completedMissions || []).includes(m.id));
-                const status = unfinished.length > 0 ? `<span class="status-tag bg-red">${unfinished.length} Pending</span>` : `<span class="status-tag bg-green">Clean</span>`;
+                
+                // 計算他有多少任務沒交 (排除入學前的任務)
+                const unfinished = allMissions.filter(m => {
+                    const mTime = m.timestamp ? m.timestamp.toMillis() : Date.now();
+                    const isTooEarly = u.createdAt && mTime < u.createdAt;
+                    return !isTooEarly && !(u.completedMissions || []).includes(m.id);
+                });
+                
+                const statusStr = unfinished.length > 0 
+                    ? `<span class="status-tag bg-red">${unfinished.length} 未交</span>` 
+                    : `<span class="status-tag bg-green">全清</span>`;
 
                 const tr = document.createElement('tr');
                 tr.className = 'user-row';
-                tr.innerHTML = `<td>#${index+1}</td><td><b>${u.username}</b><br><small>${u.loginId}</small></td><td>${u.avg ? u.avg.toFixed(1) : '---'}</td><td style="color:${tier.c}; font-weight:bold;">${tier.t}</td><td>${status}</td>`;
+                tr.innerHTML = `
+                    <td style="font-weight:bold; color:#888;">#${index+1}</td>
+                    <td><b>${u.username}</b><br><small style="color:#666;">${u.loginId}</small></td>
+                    <td><span style="color:${tier.c}; font-weight:bold; font-size:1.1rem;">${tier.t}</span><br><small>${u.avg ? u.avg.toFixed(1) : '--'}</small></td>
+                    <td>${statusStr}</td>
+                `;
 
                 tr.onclick = () => {
-                    const existing = document.getElementById('det-' + u.id);
-                    if(existing) { existing.remove(); return; }
+                    const existingDetail = document.getElementById('det-' + u.id);
+                    if(existingDetail) { existingDetail.remove(); return; }
+                    
                     const detailTr = document.createElement('tr');
                     detailTr.id = 'det-' + u.id;
-                    let histHtml = (u.history || []).map((h, i) => `<div style="margin-bottom:5px;">[${h.subject}] <b>${h.score}分</b> <span class="score-edit" onclick="event.stopPropagation(); editScore('${u.id}', ${i}, ${h.score})">EDIT</span></div>`).join('');
-                    let unfHtml = unfinished.map(m => `<div>❌ Missing: ${m.title} (${m.subject})</div>`).join('');
-                    detailTr.innerHTML = `<td colspan="5" class="detail-area"><div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;"><div><b style="color:var(--blue);">HISTORY:</b><br>${histHtml || 'None'}</div><div><b style="color:var(--red);">UNFINISHED:</b><br>${unfHtml || 'All Cleared'}</div></div></td>`;
+                    
+                    let histHtml = (u.history || []).map((h, i) => `
+                        <div style="margin-bottom:8px; border-bottom:1px solid #222; padding-bottom:5px;">
+                            [${h.subject}] <b>${h.score}分</b> 
+                            <span class="score-edit" onclick="event.stopPropagation(); editScore('${u.id}', ${i}, ${h.score})">[改分]</span>
+                        </div>
+                    `).join('');
+                    
+                    let unfHtml = unfinished.map(m => `<div style="margin-bottom:5px; color:#f87171;">❌ ${m.title}</div>`).join('');
+
+                    detailTr.innerHTML = `
+                        <td colspan="4" class="detail-area">
+                            <div style="margin-bottom:10px;"><b style="color:var(--red);">未完成任務:</b><br>${unfHtml || '<span style="color:#10b981;">無</span>'}</div>
+                            <div><b style="color:var(--blue);">歷史成績 (點擊改分):</b><br>${histHtml || '<span style="color:#666;">無紀錄</span>'}</div>
+                        </td>
+                    `;
                     tr.parentNode.insertBefore(detailTr, tr.nextSibling);
                 };
                 list.appendChild(tr);
