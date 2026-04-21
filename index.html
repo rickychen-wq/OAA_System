@@ -26,7 +26,7 @@
         input.sys-input { width: 100%; padding: 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; color: white; margin-bottom: 15px; text-align: center; box-sizing: border-box; font-size: 1rem; }
         input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 10px rgba(59,130,246,0.3); }
         button.sys-btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #2563eb; transform: translateY(-1px); }
+        button.sys-btn:hover { background: #2563eb; transform: translateY(-1px); }
 
         /* 主儀表板 */
         .dashboard { max-width: 850px; margin: 0 auto; padding: 20px; }
@@ -37,7 +37,7 @@
         /* 評級展示 */
         .rank-box { text-align: center; padding: 30px; }
         .rank-label { font-size: 0.8rem; letter-spacing: 3px; color: var(--text-dim); }
-        .rank-main { font-size: 6rem; font-weight: 900; line-height: 1; margin: 15px 0; }
+        .rank-main { font-size: 6rem; font-weight: 900; line-height: 1; margin: 15px 0; text-shadow: 0 0 20px rgba(255,255,255,0.05); }
         .avg-display { font-size: 1rem; color: var(--text-dim); }
         .avg-display span { color: white; font-weight: bold; font-size: 1.2rem; }
 
@@ -48,8 +48,8 @@
         .sub-tier { font-weight: 900; font-size: 1.1rem; }
 
         /* 標籤頁切換 */
-        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 12px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; border-radius: 8px; transition: 0.3s; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { flex: 1; min-width: 100px; padding: 12px; background: transparent; border: 1px solid var(--border); color: var(--text-dim); cursor: pointer; border-radius: 8px; transition: 0.3s; }
         .tab-btn.active { background: rgba(59, 130, 246, 0.15); border-color: var(--primary); color: var(--primary); font-weight: bold; }
 
         /* 列表樣式 */
@@ -60,13 +60,14 @@
         
         /* 排行榜展開效果 */
         .roster-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; }
+        .roster-card:hover { border-color: var(--primary); }
         .roster-head { padding: 15px; display: flex; align-items: center; justify-content: space-between; }
         .roster-detail { padding: 0 15px 15px 15px; border-top: 1px dashed rgba(255,255,255,0.1); display: none; }
         .roster-card.active .roster-detail { display: block; }
         .rank-num { width: 40px; font-weight: 900; color: var(--text-dim); font-size: 1.2rem; }
 
         /* 評級顏色 */
-        .t-S { color: var(--s); text-shadow: 0 0 10px var(--s); } .t-A { color: var(--a); }
+        .t-S { color: var(--s); text-shadow: 0 0 10px rgba(251, 191, 36, 0.3); } .t-A-plus { color: #38bdf8; } .t-A { color: var(--a); }
         .t-B { color: var(--b); } .t-C { color: var(--c); } .t-D { color: var(--d); } .t-N { color: #4b5563; }
 
         /* 彈窗 */
@@ -82,12 +83,12 @@
             <input type="text" id="in-id" class="sys-input" placeholder="學員 ID">
             <input type="password" id="in-pw" class="sys-input" placeholder="密碼">
             <button class="sys-btn" onclick="handleLogin()">系統登入</button>
-            <p id="auth-msg" style="color: #f87171; font-size: 0.8rem; margin-top: 15px;"></p>
+            <p id="auth-msg" style="color: #f87171; font-size: 0.8rem; margin-top: 15px; height: 15px;"></p>
         </div>
         <div id="reg-form" class="hidden">
             <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 20px;">檢測到新 ID，請初始化您的姓名</p>
-            <input type="text" id="reg-name" class="sys-input" placeholder="您的真實姓名">
-            <button class="sys-btn" onclick="handleRegister()">完成初始化</button>
+            <input type="text" id="reg-name" class="sys-input" placeholder="輸入顯示名稱">
+            <button class="sys-btn" onclick="handleRegister()">確認綁定</button>
         </div>
     </div>
 </div>
@@ -103,12 +104,10 @@
 
     <div class="top-row">
         <div class="glass rank-box">
-            <div class="rank-label">OVERALL ABILITY</div>
+            <div class="rank-label">OVERALL EVALUATION</div>
             <div id="main-rank" class="rank-main t-N">--</div>
-            <div class="avg-display">平均測驗分數 <span><span id="main-avg">未定</span></span></div>
-            
-            <div class="subject-grid" id="my-sub-grid">
-                </div>
+            <div class="avg-display">全科平均分數: <span><span id="main-avg">未定</span></span></div>
+            <div class="subject-grid" id="my-sub-grid"></div>
         </div>
         <div class="glass" style="padding: 20px; display: flex; align-items: center;">
             <canvas id="mainChart"></canvas>
@@ -116,9 +115,9 @@
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('mission', this)">當前任務</button>
-        <button class="tab-btn" onclick="switchTab('history', this)">測驗歷史</button>
-        <button class="tab-btn" onclick="switchTab('roster', this)">全校天梯</button>
+        <button class="tab-btn active" onclick="switchTab('mission', this)">待辦任務</button>
+        <button class="tab-btn" onclick="switchTab('history', this)">歷史紀錄</button>
+        <button class="tab-btn" onclick="switchTab('roster', this)">全校天梯榜</button>
     </div>
 
     <div class="list-container">
@@ -134,7 +133,7 @@
         <p id="m-sub" style="color: var(--text-dim); margin-bottom: 25px;">科目</p>
         <input type="number" id="m-score" class="sys-input" placeholder="輸入分數 (0-100)">
         <div style="display: flex; gap: 10px;">
-            <button class="sys-btn" style="background: #374151;" onclick="closeModal()">取消</button>
+            <button class="sys-btn" style="background: #374151; color: white; border: none;" onclick="closeModal()">取消</button>
             <button class="sys-btn" onclick="submitScore()">提交成績</button>
         </div>
     </div>
@@ -146,37 +145,53 @@
 
     let currentUser = null, myChart = null;
     let activeMid = null, activeSub = null;
+    let tempRegId = "", tempRegPw = "";
     const SUBJECTS = ["國文","英文","數學","物理","地科","公民","歷史"];
 
-    // 評級決定邏輯 (完全依據分數)
+    // 評級決定邏輯 (完全依賴分數)
     function getTier(score) {
         if (score === null || score === undefined) return { t: '未定', c: 't-N' };
         if (score >= 95) return { t: 'S', c: 't-S' };
-        if (score >= 85) return { t: 'A+', c: 't-A' };
+        if (score >= 85) return { t: 'A+', c: 't-A-plus' };
         if (score >= 80) return { t: 'A', c: 't-A' };
         if (score >= 70) return { t: 'B', c: 't-B' };
         if (score >= 60) return { t: 'C', c: 't-C' };
         return { t: 'D', c: 't-D' };
     }
 
-    // 登入流程
     async function handleLogin() {
         const id = document.getElementById('in-id').value.trim(), pw = document.getElementById('in-pw').value;
-        if(!id || !pw) return;
-        const snap = await db.collection("users").where("loginId", "==", id).get();
-        if(!snap.empty) {
-            const doc = snap.docs[0];
-            if(doc.data().password === pw) { currentUser = { docId: doc.id, ...doc.data() }; startSystem(); }
-            else document.getElementById('auth-msg').innerText = "ERROR: 密碼不匹配";
-        } else {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('reg-form').classList.remove('hidden');
-        }
+        const msg = document.getElementById('auth-msg');
+        if(!id || !pw) { msg.innerText = "請輸入完整資訊"; return; }
+        
+        msg.innerText = "驗證中..."; msg.style.color = "var(--primary)";
+        try {
+            const snap = await db.collection("users").where("loginId", "==", id).get();
+            if(!snap.empty) {
+                const doc = snap.docs[0];
+                if(doc.data().password === pw) { 
+                    currentUser = { docId: doc.id, ...doc.data() }; 
+                    if(!currentUser.createdAt) currentUser.createdAt = 0; // 舊帳號相容
+                    startSystem(); 
+                }
+                else { msg.innerText = "密碼錯誤！"; msg.style.color = "#f87171"; }
+            } else {
+                tempRegId = id; tempRegPw = pw;
+                document.getElementById('login-form').classList.add('hidden');
+                document.getElementById('reg-form').classList.remove('hidden');
+            }
+        } catch(e) { msg.innerText = "連線失敗"; msg.style.color = "#f87171"; }
     }
 
     async function handleRegister() {
         const name = document.getElementById('reg-name').value.trim();
-        const newData = { loginId: document.getElementById('in-id').value, password: document.getElementById('in-pw').value, username: name, history: [], completedMissions: [] };
+        if(!name) return;
+        
+        // 核心：寫入 createdAt 入學時間
+        const newData = { 
+            loginId: tempRegId, password: tempRegPw, username: name, 
+            history: [], completedMissions: [], createdAt: Date.now() 
+        };
         const res = await db.collection("users").add(newData);
         currentUser = { docId: res.id, ...newData };
         startSystem();
@@ -187,6 +202,7 @@
         document.getElementById('main-dash').classList.remove('hidden');
         document.getElementById('header-id').innerText = `ID: ${currentUser.loginId}`;
         document.getElementById('header-name').innerText = currentUser.username;
+        if(!currentUser.history) currentUser.history = [];
         updateUI(); listenMissions(); loadRoster();
     }
 
@@ -195,14 +211,16 @@
         const grid = document.getElementById('my-sub-grid'); grid.innerHTML = "";
 
         SUBJECTS.forEach(sub => {
-            const h = (currentUser.history || []).filter(x => x.subject === sub);
+            const h = currentUser.history.filter(x => x.subject === sub);
             const avg = h.length ? h.reduce((a,b)=>a+b.score,0)/h.length : null;
             const tier = getTier(avg);
             if(avg !== null) { totalSum += avg; count++; }
             radar.push(avg || 0);
+            
+            let displayScore = avg === null ? '<span style="font-size:0.8rem; color:#64748b;">--</span>' : `${avg.toFixed(1)}分`;
             grid.innerHTML += `<div class="sub-item">
-                <span class="sub-name">${sub}</span>
-                <span class="sub-tier ${tier.c}">${tier.t}</span>
+                <div><div class="sub-name">${sub}</div><div class="sub-tier ${tier.c}">${tier.t}</div></div>
+                <div style="font-size:1.1rem; font-weight:bold;">${displayScore}</div>
             </div>`;
         });
 
@@ -217,18 +235,21 @@
         myChart = new Chart(ctx, {
             type: 'radar',
             data: { labels: SUBJECTS, datasets: [{ data: radar, backgroundColor: 'rgba(59,130,246,0.2)', borderColor: '#3b82f6', pointBackgroundColor: '#fff' }] },
-            options: { scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks:{display:false}, grid:{color:'rgba(255,255,255,0.1)'}, pointLabels:{color:'#94a3b8'} } }, plugins:{legend:{display:false}} }
+            options: { scales: { r: { suggestedMin: 0, suggestedMax: 100, ticks:{display:false}, grid:{color:'rgba(255,255,255,0.1)'}, angleLines:{color:'rgba(255,255,255,0.1)'}, pointLabels:{color:'#94a3b8'} } }, plugins:{legend:{display:false}} }
         });
 
-        // 渲染歷史
         const hView = document.getElementById('view-history');
-        if(currentUser.history.length === 0) hView.innerHTML = '<p style="text-align:center; color:var(--text-dim);">無紀錄</p>';
+        if(currentUser.history.length === 0) hView.innerHTML = '<p style="text-align:center; color:var(--text-dim);">尚無考試紀錄</p>';
         else {
             hView.innerHTML = "";
             [...currentUser.history].sort((a,b)=>b.timestamp-a.timestamp).forEach(h => {
+                let typeLabel = "";
+                if(h.type === 'FORCE_ZERO') typeLabel = ' <span style="color:#ef4444; font-size:0.7rem;">[處決]</span>';
+                if(h.type === 'CLEANED') typeLabel = ' <span style="color:#ef4444; font-size:0.7rem;">[強制結算]</span>';
+
                 hView.innerHTML += `<div class="history-card">
-                    <div><b>${h.subject}</b><br><small style="color:var(--text-dim);">${new Date(h.timestamp).toLocaleString()}</small></div>
-                    <div style="font-size:1.2rem;">${h.score}分</div>
+                    <div><b style="color:var(--primary);">${h.subject}</b>${typeLabel}<br><small style="color:var(--text-dim);">${new Date(h.timestamp).toLocaleString('zh-TW', {month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'})}</small></div>
+                    <div style="font-size:1.2rem; font-weight:bold;">${h.score} <span style="font-size:0.8rem; color:var(--text-dim);">分</span></div>
                 </div>`;
             });
         }
@@ -239,27 +260,38 @@
             const mView = document.getElementById('view-mission'); mView.innerHTML = "";
             let has = false;
             snap.forEach(doc => {
+                const m = doc.data();
+                const mTime = m.timestamp ? m.timestamp.toMillis() : Date.now();
+                
+                // 核心：時空隔離，太早發布的任務新生看不到
+                if (mTime < currentUser.createdAt) return;
                 if(currentUser.completedMissions.includes(doc.id)) return;
-                has = true; const m = doc.data();
+                
+                has = true;
                 mView.innerHTML += `<div class="mission-card" id="m-${doc.id}">
-                    <div><b>${m.title}</b><br><small style="color:var(--text-dim);">${m.subject}</small></div>
-                    <button onclick="openModal('${doc.id}','${m.subject}','${m.title}')" style="background:var(--primary); color:white; border:none; padding:8px 15px; border-radius:6px; cursor:pointer;">填寫成績</button>
+                    <div><b style="font-size:1.1rem;">${m.title}</b><br><small style="color:var(--text-dim);">目標科目：${m.subject}</small></div>
+                    <button onclick="openModal('${doc.id}','${m.subject}','${m.title}')" style="background:var(--primary); color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:bold; cursor:pointer;">填寫</button>
                 </div>`;
             });
             if(!has) mView.innerHTML = '<p style="text-align:center; color:var(--text-dim);">目前無指派任務</p>';
         });
     }
 
-    function openModal(id, sub, title) { activeMid = id; activeSub = sub; document.getElementById('m-title').innerText = title; document.getElementById('m-sub').innerText = `科目：${sub}`; document.getElementById('modal').classList.remove('hidden'); }
+    function openModal(id, sub, title) { activeMid = id; activeSub = sub; document.getElementById('m-title').innerText = title; document.getElementById('m-sub').innerText = `科目：${sub}`; document.getElementById('m-score').value = ""; document.getElementById('modal').classList.remove('hidden'); }
     function closeModal() { document.getElementById('modal').classList.add('hidden'); }
     
     async function submitScore() {
         const val = parseInt(document.getElementById('m-score').value);
-        if(isNaN(val)) return;
+        if(isNaN(val) || val < 0 || val > 100) return alert("請輸入 0-100 的數字");
+        
+        // 瞬間移除
+        const mEl = document.getElementById('m-'+activeMid);
+        if(mEl) mEl.style.display = 'none';
+
         const record = { mid: activeMid, subject: activeSub, score: val, timestamp: Date.now() };
         currentUser.history.push(record); currentUser.completedMissions.push(activeMid);
-        document.getElementById('m-'+activeMid).style.display = 'none';
         updateUI(); closeModal();
+        
         await db.collection("users").doc(currentUser.docId).update({ history: firebase.firestore.FieldValue.arrayUnion(record), completedMissions: firebase.firestore.FieldValue.arrayUnion(activeMid) });
     }
 
@@ -268,14 +300,15 @@
             let list = [];
             snap.forEach(doc => {
                 const d = doc.data();
-                let sum = 0, c = 0, subs = {};
+                let sum = 0, count = 0, subs = {};
                 SUBJECTS.forEach(s => {
                     const h = (d.history || []).filter(x => x.subject === s);
                     const avg = h.length ? h.reduce((a,b)=>a+b.score,0)/h.length : null;
-                    if(avg !== null) { sum += avg; c++; }
+                    if(avg !== null) { sum += avg; count++; }
                     subs[s] = getTier(avg);
+                    subs[s].avg = avg;
                 });
-                d.totalAvg = c > 0 ? sum / c : null; d.subTiers = subs;
+                d.totalAvg = count > 0 ? sum / count : null; d.subTiers = subs;
                 list.push(d);
             });
             list.sort((a,b) => (b.totalAvg || 0) - (a.totalAvg || 0));
@@ -283,8 +316,13 @@
             const rView = document.getElementById('view-roster'); rView.innerHTML = "";
             list.forEach((u, i) => {
                 const mt = getTier(u.totalAvg);
+                
+                // 展開內容：各科詳細狀況
                 let details = `<div class="roster-detail"><div class="subject-grid">`;
-                SUBJECTS.forEach(s => { details += `<div class="sub-item"><span class="sub-name">${s}</span><span class="${u.subTiers[s].c}">${u.subTiers[s].t}</span></div>`; });
+                SUBJECTS.forEach(s => { 
+                    const subTier = u.subTiers[s];
+                    details += `<div class="sub-item" style="padding:8px;"><span class="sub-name">${s}</span><span class="${subTier.c}" style="font-weight:bold;">${subTier.t}</span></div>`; 
+                });
                 details += `</div></div>`;
                 
                 const card = document.createElement('div');
@@ -292,10 +330,14 @@
                 card.innerHTML = `<div class="roster-head">
                     <div style="display:flex; align-items:center;">
                         <div class="rank-num">#${i+1}</div>
-                        <div><b>${u.username}</b><br><small style="color:var(--text-dim);">${u.loginId}</small></div>
+                        <div><b style="font-size:1.1rem;">${u.username}</b><br><small style="color:var(--text-dim);">${u.loginId}</small></div>
                     </div>
-                    <div class="${mt.c}" style="font-size:1.8rem; font-weight:900;">${mt.t}</div>
+                    <div style="text-align:right;">
+                        <div class="${mt.c}" style="font-size:1.8rem; font-weight:900;">${mt.t}</div>
+                        <div style="font-size:0.8rem; color:var(--text-dim);">${u.totalAvg ? u.totalAvg.toFixed(1) : '未定'}</div>
+                    </div>
                 </div>${details}`;
+                
                 card.onclick = () => card.classList.toggle('active');
                 rView.appendChild(card);
             });
